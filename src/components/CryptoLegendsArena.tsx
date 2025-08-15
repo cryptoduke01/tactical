@@ -26,11 +26,11 @@ export function CryptoLegendsArena() {
 
     setIsLoading(true);
     try {
-      // Initialize player profile using Honeycomb
+      // Initialize player profile using HeroManager (which now uses storage)
       const profile = await heroManager.createPlayerProfile(wallet.publicKey.toBase58());
       setPlayerProfile(profile);
 
-      // Load player's heroes
+      // Load player's heroes (now persistent)
       const playerHeroes = await heroManager.getPlayerHeroes(wallet.publicKey.toBase58());
       setHeroes(playerHeroes);
     } catch (error) {
@@ -160,34 +160,15 @@ export function CryptoLegendsArena() {
         )}
       </div>
 
-      {/* Military Status Footer */}
-      <div className="tactical-panel p-6 border-slate-500/30">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center">
-          <div className="hud-element">
-            <div className="hud-label">ACTIVE UNITS</div>
-            <div className="hud-value">{heroes.length}</div>
-          </div>
-          <div className="hud-element">
-            <div className="hud-label">COMBAT RATING</div>
-            <div className="hud-value">{playerProfile?.level || 1}</div>
-          </div>
-          <div className="hud-element">
-            <div className="hud-label">MISSIONS COMPLETE</div>
-            <div className="hud-value">{playerProfile?.questsCompleted || 0}</div>
-          </div>
-          <div className="hud-element">
-            <div className="hud-label">BATTLE VICTORIES</div>
-            <div className="hud-value">{playerProfile?.battlesWon || 0}</div>
-          </div>
-        </div>
-
-        <div className="mt-4 text-center">
+      {/* Simple Status Footer */}
+      <div className="tactical-panel p-4 border-slate-500/30">
+        <div className="text-center">
           <p className="text-slate-400 text-sm font-mono">
             <span className="text-emerald-400 font-semibold">TACTICAL CRYPTO ARENA</span> -
             Powered by Honeycomb Protocol on Solana
           </p>
-          <p className="text-slate-500 text-xs mt-1 font-mono">
-            Your tactical reputation is permanently stored on-chain
+          <p className="text-emerald-400 text-xs mt-2 font-mono">
+            💾 Progress automatically saved to local storage
           </p>
         </div>
       </div>

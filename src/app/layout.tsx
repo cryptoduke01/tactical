@@ -11,6 +11,7 @@ import {
 import {
   WalletModalProvider,
 } from "@solana/wallet-adapter-react-ui";
+import { Toaster } from "react-hot-toast";
 
 import "@solana/wallet-adapter-react-ui/styles.css";
 import "./globals.css";
@@ -46,6 +47,30 @@ export default function RootLayout({
           <WalletProvider wallets={wallets} autoConnect>
             <WalletModalProvider>
               {children}
+              <Toaster
+                position="top-right"
+                toastOptions={{
+                  duration: 4000,
+                  style: {
+                    background: '#1e293b',
+                    color: '#e5e7eb',
+                    border: '1px solid #475569',
+                    fontFamily: 'monospace',
+                  },
+                  success: {
+                    style: {
+                      border: '1px solid #10b981',
+                      background: '#064e3b',
+                    },
+                  },
+                  error: {
+                    style: {
+                      border: '1px solid #ef4444',
+                      background: '#7f1d1d',
+                    },
+                  },
+                }}
+              />
             </WalletModalProvider>
           </WalletProvider>
         </ConnectionProvider>

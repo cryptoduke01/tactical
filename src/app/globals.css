@@ -30,20 +30,66 @@
     @apply bg-gradient-to-br from-slate-800/90 to-slate-700/70 backdrop-blur-xl border border-slate-500/50 rounded-xl shadow-2xl;
   }
 
+  /* Military Button Effects */
   .military-button {
-    @apply bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white font-bold px-6 py-3 rounded-lg border border-slate-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg;
+    @apply bg-gradient-to-r from-slate-700 to-slate-600 hover:from-slate-600 hover:to-slate-500 text-white font-bold px-6 py-3 rounded-lg border border-slate-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95 active:shadow-inner;
+  }
+
+  .military-button:disabled {
+    @apply opacity-50 cursor-not-allowed transform-none hover:scale-100 hover:shadow-none;
+  }
+
+  .military-button.loading {
+    @apply cursor-wait;
   }
 
   .tactical-button {
-    @apply bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold px-6 py-3 rounded-lg border border-amber-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg;
+    @apply bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold px-6 py-3 rounded-lg border border-amber-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95 active:shadow-inner hover:shadow-amber-500/25;
+  }
+
+  .tactical-button:disabled {
+    @apply opacity-50 cursor-not-allowed transform-none hover:scale-100 hover:shadow-none;
+  }
+
+  .tactical-button.loading {
+    @apply cursor-wait;
   }
 
   .danger-button {
-    @apply bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-bold px-6 py-3 rounded-lg border border-red-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg;
+    @apply bg-gradient-to-r from-red-700 to-red-600 hover:from-red-600 hover:to-red-500 text-white font-bold px-6 py-3 rounded-lg border border-red-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95 active:shadow-inner hover:shadow-red-500/25;
+  }
+
+  .danger-button:disabled {
+    @apply opacity-50 cursor-not-allowed transform-none hover:scale-100 hover:shadow-none;
+  }
+
+  .danger-button.loading {
+    @apply cursor-wait;
   }
 
   .success-button {
-    @apply bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-lg border border-emerald-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg;
+    @apply bg-gradient-to-r from-emerald-700 to-emerald-600 hover:from-emerald-600 hover:to-emerald-500 text-white font-bold px-6 py-3 rounded-lg border border-emerald-500/50 transition-all duration-200 transform hover:scale-105 hover:shadow-lg active:scale-95 active:shadow-inner hover:shadow-emerald-500/25;
+  }
+
+  .success-button:disabled {
+    @apply opacity-50 cursor-not-allowed transform-none hover:scale-100 hover:shadow-none;
+  }
+
+  .success-button.loading {
+    @apply cursor-wait;
+  }
+
+  /* Interactive Card Effects */
+  .interactive-card {
+    @apply cursor-pointer transition-all duration-300 transform hover:scale-105 hover:shadow-xl active:scale-95;
+  }
+
+  .interactive-card:hover {
+    @apply border-emerald-400/50;
+  }
+
+  .interactive-card:active {
+    @apply transform scale-95;
   }
 
   /* Military Color Schemes */

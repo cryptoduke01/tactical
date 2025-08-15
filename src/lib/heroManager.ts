@@ -1,5 +1,7 @@
 import createEdgeClient from "@honeycomb-protocol/edge-client";
 import { sendClientTransactions } from "@honeycomb-protocol/edge-client/client/walletHelpers";
+import { storageManager } from "./storage";
+import toast from "react-hot-toast";
 
 // Use Honeynet for testing (unlimited SOL available)
 const API_URL = "https://edge.test.honeycombprotocol.com/";
@@ -62,101 +64,94 @@ export class HeroManager {
 
   async createPlayerProfile(walletAddress: string): Promise<PlayerProfile> {
     try {
-      console.log(
-        "Creating player profile on Honeycomb for wallet:",
+      console.log("Creating player profile for wallet:", walletAddress);
+
+      // Check if profile already exists in storage
+      const existingProfile = await storageManager.loadPlayerProfile(
         walletAddress
       );
+      if (existingProfile) {
+        toast.success("Existing profile loaded!");
+        return existingProfile;
+      }
 
-      // Create user profile using Honeycomb
-      const { createNewUserWithProfileTransaction: txResponse } =
-        await client.createNewUserWithProfileTransaction({
-          project: this.projectAddress,
-          wallet: walletAddress,
-          payer: walletAddress,
-          profileIdentity: "main",
-          userInfo: {
-            name: `Tactical_${walletAddress.slice(0, 8)}`,
-            bio: "Tactical Crypto Arena Operator",
-            pfp: "https://example.com/default-avatar.png",
-          },
-        });
-
-      console.log("Honeycomb profile creation transaction:", txResponse);
-
-      // Store additional game data in Honeycomb
-      const gameData = {
+      // Create new profile
+      const newProfile: PlayerProfile = {
+        id: `honeycomb_${walletAddress.slice(0, 8)}`,
+        wallet: walletAddress,
+        name: `Tactical_${walletAddress.slice(0, 8)}`,
         level: 1,
-        xp: 0,
+        xp: 10000, // Give new wallets a huge XP balance to start with
+        heroes: [],
         battlesWon: 0,
         battlesLost: 0,
         questsCompleted: 0,
         reputation: 100,
         lastActive: Date.now(),
-        heroes: [],
       };
 
-      // Try to store game data in Honeycomb (this would be done via character creation)
+      // Try to create on Honeycomb first
       try {
-        await this.storeGameData(walletAddress, gameData);
+        const { createNewUserWithProfileTransaction: txResponse } =
+          await client.createNewUserWithProfileTransaction({
+            project: this.projectAddress,
+            wallet: walletAddress,
+            payer: walletAddress,
+            profileIdentity: "main",
+            userInfo: {
+              name: newProfile.name,
+              bio: "Tactical Crypto Arena Operator",
+              pfp: "https://example.com/default-avatar.png",
+            },
+          });
+
+        console.log("Honeycomb profile creation transaction:", txResponse);
+        toast.success("Profile created on blockchain!");
       } catch (error) {
-        console.log("Game data storage failed, using local fallback:", error);
+        console.error("Failed to create profile on Honeycomb:", error);
+        toast("Profile created locally (blockchain unavailable)", {
+          icon: "⚠️",
+          style: {
+            background: "#92400e",
+            color: "#fef3c7",
+            border: "1px solid #f59e0b",
+          },
+        });
       }
 
-      // Return the created profile
-      return {
-        id: `honeycomb_${walletAddress.slice(0, 8)}`,
-        wallet: walletAddress,
-        name: `Tactical_${walletAddress.slice(0, 8)}`,
-        ...gameData,
-      };
-    } catch (error) {
-      console.error("Error creating player profile on Honeycomb:", error);
-      console.log("Falling back to local profile creation");
-      // Fallback to local profile
-      return this.createLocalProfile(walletAddress);
-    }
-  }
+      // Save to local storage
+      await storageManager.savePlayerProfile(newProfile);
 
-  private async storeGameData(walletAddress: string, gameData: any) {
-    try {
-      // For now, just log the data - in production this would be stored on-chain
-      console.log("Game data to be stored on Honeycomb:", gameData);
-      console.log(
-        "This would create a character or use existing storage methods"
-      );
+      return newProfile;
     } catch (error) {
-      console.error("Failed to store game data:", error);
+      console.error("Error creating player profile:", error);
+      toast.error("Failed to create player profile");
       throw error;
     }
-  }
-
-  private createLocalProfile(walletAddress: string): PlayerProfile {
-    return {
-      id: `local_${walletAddress.slice(0, 8)}`,
-      wallet: walletAddress,
-      name: `Tactical_${walletAddress.slice(0, 8)}`,
-      level: 1,
-      xp: 0,
-      heroes: [],
-      battlesWon: 0,
-      battlesLost: 0,
-      questsCompleted: 0,
-      reputation: 100,
-      lastActive: Date.now(),
-    };
   }
 
   async getPlayerHeroes(walletAddress: string): Promise<Hero[]> {
     try {
       console.log("Fetching heroes for wallet:", walletAddress);
 
-      // For now, return starter heroes since we're in development
-      // In production, this would fetch from Honeycomb
-      console.log("Returning starter heroes for development");
-      return this.getStarterHeroes();
+      // Try to load from storage first
+      const storedHeroes = await storageManager.loadHeroes(walletAddress);
+      if (storedHeroes.length > 0) {
+        toast.success("Heroes loaded from storage");
+        return storedHeroes;
+      }
+
+      // If no stored heroes, return starter heroes
+      const starterHeroes = this.getStarterHeroes();
+
+      // Save starter heroes to storage
+      await storageManager.saveHeroes(walletAddress, starterHeroes);
+
+      toast.success("Starter heroes assigned!");
+      return starterHeroes;
     } catch (error) {
       console.error("Error fetching heroes:", error);
-      console.log("Falling back to starter heroes");
+      toast.error("Failed to load heroes");
       return this.getStarterHeroes();
     }
   }
@@ -256,6 +251,99 @@ export class HeroManager {
         health: 85,
         mana: 75,
       },
+      {
+        id: "raj",
+        name: "Raj Gokal",
+        level: 1,
+        xp: 0,
+        rarity: "legendary",
+        traits: [
+          {
+            name: "Solana Leadership",
+            value: 95,
+            maxValue: 100,
+            description: "Solana co-founder and COO",
+          },
+          {
+            name: "Strategic Vision",
+            value: 90,
+            maxValue: 100,
+            description: "Business development expert",
+          },
+          {
+            name: "Ecosystem Building",
+            value: 95,
+            maxValue: 100,
+            description: "Community growth specialist",
+          },
+        ],
+        image: "https://example.com/raj.png",
+        power: 95,
+        health: 90,
+        mana: 90,
+      },
+      {
+        id: "anatoly",
+        name: "Anatoly Yakovenko",
+        level: 1,
+        xp: 0,
+        rarity: "legendary",
+        traits: [
+          {
+            name: "Technical Innovation",
+            value: 100,
+            maxValue: 100,
+            description: "Solana founder and CEO",
+          },
+          {
+            name: "Blockchain Architecture",
+            value: 95,
+            maxValue: 100,
+            description: "PoH consensus inventor",
+          },
+          {
+            name: "Performance",
+            value: 100,
+            maxValue: 100,
+            description: "65k TPS architect",
+          },
+        ],
+        image: "https://example.com/anatoly.png",
+        power: 100,
+        health: 95,
+        mana: 100,
+      },
+      {
+        id: "greg",
+        name: "Greg Fitzgerald",
+        level: 1,
+        xp: 0,
+        rarity: "epic",
+        traits: [
+          {
+            name: "Core Development",
+            value: 90,
+            maxValue: 100,
+            description: "Solana core contributor",
+          },
+          {
+            name: "Rust Programming",
+            value: 95,
+            maxValue: 100,
+            description: "Systems programming expert",
+          },
+          {
+            name: "Performance Optimization",
+            value: 85,
+            maxValue: 100,
+            description: "Low-latency specialist",
+          },
+        ],
+        image: "https://example.com/greg.png",
+        power: 85,
+        health: 80,
+        mana: 90,
+      },
     ];
   }
 
@@ -279,47 +367,59 @@ export class HeroManager {
         mana: heroData.mana || 50,
       };
 
-      // For now, just log the hero creation
-      // In production, this would be stored on Honeycomb
-      console.log("Hero created:", newHero);
-      console.log("In production, this would be stored on Honeycomb");
+      // Get current heroes and add new one
+      const currentHeroes = await this.getPlayerHeroes(walletAddress);
+      const updatedHeroes = [...currentHeroes, newHero];
 
+      // Save updated hero collection
+      await storageManager.saveHeroes(walletAddress, updatedHeroes);
+
+      toast.success(`New hero "${newHero.name}" created!`);
       return newHero;
     } catch (error) {
       console.error("Error creating hero:", error);
+      toast.error("Failed to create hero");
       throw error;
     }
   }
 
   async updateHeroTraits(
+    walletAddress: string,
     heroId: string,
     traitUpdates: Partial<HeroTrait>[]
   ): Promise<Hero> {
     try {
       console.log(`Updating hero ${heroId} traits:`, traitUpdates);
 
-      // In a real implementation, this would update character data on Honeycomb
-      // For now, we'll simulate the update
-      const hero =
-        this.getStarterHeroes().find((h) => h.id === heroId) ||
-        this.getStarterHeroes()[0];
+      // Get current heroes
+      const currentHeroes = await this.getPlayerHeroes(walletAddress);
+      const heroIndex = currentHeroes.findIndex((h) => h.id === heroId);
 
-      if (hero) {
-        // Apply trait updates
-        traitUpdates.forEach((update) => {
-          const trait = hero.traits.find((t) => t.name === update.name);
-          if (trait && update.value !== undefined) {
-            trait.value = Math.min(update.value, trait.maxValue);
-          }
-        });
-
-        // Recalculate power
-        hero.power = this.calculateHeroPower(hero);
+      if (heroIndex === -1) {
+        throw new Error("Hero not found");
       }
 
+      const hero = currentHeroes[heroIndex];
+
+      // Apply trait updates
+      traitUpdates.forEach((update) => {
+        const trait = hero.traits.find((t) => t.name === update.name);
+        if (trait && update.value !== undefined) {
+          trait.value = Math.min(update.value, trait.maxValue);
+        }
+      });
+
+      // Recalculate power
+      hero.power = this.calculateHeroPower(hero);
+
+      // Save updated heroes
+      await storageManager.saveHeroes(walletAddress, currentHeroes);
+
+      toast.success("Hero traits updated!");
       return hero;
     } catch (error) {
       console.error("Error updating hero traits:", error);
+      toast.error("Failed to update hero traits");
       throw error;
     }
   }
@@ -334,20 +434,35 @@ export class HeroManager {
         `Quest ${questId} completed by ${walletAddress}, XP gained: ${xpGained}`
       );
 
-      // Update player stats on Honeycomb
-      try {
-        await this.updatePlayerStats(walletAddress, {
-          xp: xpGained,
-          questsCompleted: 1,
-        });
-        console.log("Quest completion recorded");
-      } catch (error) {
-        console.error("Failed to record quest completion:", error);
+      // Load current profile
+      const profile = await storageManager.loadPlayerProfile(walletAddress);
+      if (!profile) {
+        throw new Error("Player profile not found");
       }
 
+      // Update profile
+      const updatedProfile: PlayerProfile = {
+        ...profile,
+        xp: profile.xp + xpGained,
+        questsCompleted: profile.questsCompleted + 1,
+        lastActive: Date.now(),
+      };
+
+      // Check for level up
+      const newLevel = Math.floor(updatedProfile.xp / 100) + 1;
+      if (newLevel > updatedProfile.level) {
+        updatedProfile.level = newLevel;
+        toast.success(`Level up! You are now level ${newLevel}!`);
+      }
+
+      // Save updated profile
+      await storageManager.savePlayerProfile(updatedProfile);
+
+      toast.success(`Quest completed! +${xpGained} XP gained`);
       return { success: true, xpGained };
     } catch (error) {
       console.error("Error completing quest:", error);
+      toast.error("Failed to complete quest");
       return { success: false, xpGained: 0 };
     }
   }
@@ -359,15 +474,27 @@ export class HeroManager {
     try {
       console.log(`Updating player ${walletAddress} stats:`, updates);
 
-      // For now, just log the updates
-      // In production, this would update data on Honeycomb
-      console.log("Player stats updated:", updates);
-      console.log("In production, this would be stored on Honeycomb");
+      // Load current profile
+      const profile = await storageManager.loadPlayerProfile(walletAddress);
+      if (!profile) {
+        throw new Error("Player profile not found");
+      }
 
-      // Return updated profile
-      return this.createLocalProfile(walletAddress);
+      // Update profile
+      const updatedProfile: PlayerProfile = {
+        ...profile,
+        ...updates,
+        lastActive: Date.now(),
+      };
+
+      // Save updated profile
+      await storageManager.savePlayerProfile(updatedProfile);
+
+      toast.success("Player stats updated!");
+      return updatedProfile;
     } catch (error) {
       console.error("Error updating player stats:", error);
+      toast.error("Failed to update player stats");
       throw error;
     }
   }
@@ -382,5 +509,44 @@ export class HeroManager {
     const levelBonus = (hero.level - 1) * 5;
 
     return Math.floor(basePower + traitBonus + levelBonus);
+  }
+
+  // Method to save all game data
+  async saveGameData(
+    walletAddress: string,
+    profile: PlayerProfile,
+    heroes: Hero[]
+  ): Promise<boolean> {
+    try {
+      await Promise.all([
+        storageManager.savePlayerProfile(profile),
+        storageManager.saveHeroes(walletAddress, heroes),
+      ]);
+
+      toast.success("Game progress saved!");
+      return true;
+    } catch (error) {
+      console.error("Failed to save game data:", error);
+      toast.error("Failed to save game progress");
+      return false;
+    }
+  }
+
+  // Method to load all game data
+  async loadGameData(
+    walletAddress: string
+  ): Promise<{ profile: PlayerProfile | null; heroes: Hero[] }> {
+    try {
+      const [profile, heroes] = await Promise.all([
+        storageManager.loadPlayerProfile(walletAddress),
+        storageManager.loadHeroes(walletAddress),
+      ]);
+
+      return { profile, heroes };
+    } catch (error) {
+      console.error("Failed to load game data:", error);
+      toast.error("Failed to load game progress");
+      return { profile: null, heroes: [] };
+    }
   }
 }
