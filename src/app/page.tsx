@@ -1,103 +1,149 @@
-import Image from "next/image";
+'use client'
+import { WalletMultiButton } from "@solana/wallet-adapter-react-ui";
+import { useWallet } from "@solana/wallet-adapter-react";
+import { CryptoLegendsArena } from "@/components/CryptoLegendsArena";
 
 export default function Home() {
-  return (
-    <div className="font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const wallet = useWallet();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
-        </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+      {/* Military Grid Background */}
+      <div className="absolute inset-0 military-grid opacity-20"></div>
+
+      {/* Tactical Scan Lines */}
+      <div className="absolute inset-0 bg-gradient-to-b from-transparent via-slate-800/10 to-transparent animate-pulse"></div>
+
+      {/* Military HUD Corner Elements */}
+      <div className="absolute top-0 left-0 w-32 h-32 border-l-2 border-t-2 border-emerald-400/50"></div>
+      <div className="absolute top-0 right-0 w-32 h-32 border-r-2 border-t-2 border-emerald-400/50"></div>
+      <div className="absolute bottom-0 left-0 w-32 h-32 border-l-2 border-b-2 border-emerald-400/50"></div>
+      <div className="absolute bottom-0 right-0 w-32 h-32 border-r-2 border-b-2 border-emerald-400/50"></div>
+
+      <div className="max-w-7xl mx-auto relative z-10">
+        <header className="text-center mb-12 pt-8">
+          {/* Military Title with Tactical Effects */}
+          <div className="relative mb-6">
+            <div className="absolute inset-0 bg-gradient-to-r from-emerald-400/20 to-blue-400/20 blur-3xl"></div>
+            <h1 className="text-8xl font-black text-white mb-2 tracking-widest military-text relative z-10">
+              TACTICAL
+            </h1>
+            <div className="text-6xl font-black text-emerald-400/30 absolute inset-0 -z-10 blur-sm">
+              TACTICAL
+            </div>
+          </div>
+
+          <h2 className="text-5xl font-bold text-emerald-400 mb-4 tracking-wider tactical-text">
+            CRYPTO ARENA
+          </h2>
+
+          <div className="w-32 h-1 bg-gradient-to-r from-emerald-400 to-blue-400 mx-auto mb-6"></div>
+
+          <p className="text-xl text-slate-300 mb-8 max-w-4xl mx-auto leading-relaxed font-mono">
+            <span className="text-emerald-400 font-bold">DEPLOY</span> legendary crypto heroes into combat.
+            <br />
+            <span className="text-blue-400 font-bold">ENGAGE</span> in real-time tactical PvP warfare.
+            <br />
+            <span className="text-amber-400 font-bold">COMPLETE</span> high-stakes DeFi missions.
+            <br />
+            <span className="text-slate-400 font-mono">Your tactical reputation is permanently stored on-chain.</span>
+          </p>
+
+          {/* Military Status Indicators */}
+          <div className="flex justify-center items-center gap-4 mb-6">
+            <div className="flex items-center gap-2">
+              <div className="status-online"></div>
+              <span className="text-emerald-400 text-sm font-mono">SOLANA NETWORK: ONLINE</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="status-online"></div>
+              <span className="text-emerald-400 text-sm font-mono">HONEYCOMB PROTOCOL: ACTIVE</span>
+            </div>
+          </div>
+
+          {/* Tactical Wallet Button */}
+          <div className="transform hover:scale-105 transition-all duration-300">
+            <WalletMultiButton className="!bg-gradient-to-r !from-slate-700 !to-slate-600 hover:!from-slate-600 hover:!to-slate-500 !text-white !font-bold !px-10 !py-4 !rounded-lg !border-2 !border-emerald-400/50 !shadow-lg hover:!shadow-emerald-400/25 !font-mono !tracking-wider" />
+          </div>
+        </header>
+
+        {wallet.connected ? (
+          <CryptoLegendsArena />
+        ) : (
+          <div className="text-center max-w-6xl mx-auto">
+            {/* Tactical Mission Briefing Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-12">
+              <div className="group relative">
+                <div className="tactical-panel p-8 transform group-hover:scale-105 transition-all duration-500 hover:border-emerald-400/50 hover:tactical-glow-green">
+                  <div className="text-6xl mb-4">⚔️</div>
+                  <h3 className="text-2xl font-bold text-white mb-3 font-mono tracking-wider">COMBAT OPERATIONS</h3>
+                  <p className="text-slate-300 leading-relaxed font-mono text-sm">
+                    Real-time tactical PvP warfare with legendary crypto heroes.
+                    Every engagement affects your on-chain tactical rating.
+                  </p>
+                  <div className="mt-4 text-emerald-400 text-xs font-mono tracking-wider">
+                    STATUS: READY FOR DEPLOYMENT
+                  </div>
+                </div>
+              </div>
+
+              <div className="group relative">
+                <div className="tactical-panel p-8 transform group-hover:scale-105 transition-all duration-500 hover:border-blue-400/50 hover:tactical-glow-blue">
+                  <div className="text-6xl mb-4">🎯</div>
+                  <h3 className="text-2xl font-bold text-white mb-3 font-mono tracking-wider">SPECIAL MISSIONS</h3>
+                  <p className="text-slate-300 leading-relaxed font-mono text-sm">
+                    High-stakes DeFi operations to earn XP, evolve traits, and unlock
+                    advanced tactical capabilities.
+                  </p>
+                  <div className="mt-4 text-blue-400 text-xs font-mono tracking-wider">
+                    STATUS: MISSION BRIEFING READY
+                  </div>
+                </div>
+              </div>
+
+              <div className="group relative">
+                <div className="tactical-panel p-8 transform group-hover:scale-105 transition-all duration-500 hover:border-amber-400/50 hover:tactical-glow-orange">
+                  <div className="text-6xl mb-4">🚀</div>
+                  <h3 className="text-2xl font-bold text-white mb-3 font-mono tracking-wider">TACTICAL PROGRESSION</h3>
+                  <p className="text-slate-300 leading-relaxed font-mono text-sm">
+                    Your achievements, hero evolution, and tactical reputation
+                    are permanently stored on Solana via Honeycomb Protocol.
+                  </p>
+                  <div className="mt-4 text-amber-400 text-xs font-mono tracking-wider">
+                    STATUS: PROTOCOL ACTIVE
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Military Call to Action */}
+            <div className="tactical-panel p-8 backdrop-blur-xl border-emerald-400/30">
+              <h3 className="text-3xl font-bold text-white mb-4 font-mono tracking-wider">READY FOR DEPLOYMENT, SOLDIER?</h3>
+              <p className="text-slate-300 mb-6 font-mono">
+                Connect your wallet to deploy your first tactical hero and enter the arena.
+                <br />
+                <span className="text-emerald-400 font-bold font-mono">The future of tactical gaming is on-chain.</span>
+              </p>
+
+              {/* Military HUD Elements */}
+              <div className="grid grid-cols-3 gap-4 mt-6">
+                <div className="hud-element">
+                  <div className="hud-label">NETWORK STATUS</div>
+                  <div className="hud-value">SOLANA DEVNET</div>
+                </div>
+                <div className="hud-element">
+                  <div className="hud-label">PROTOCOL VERSION</div>
+                  <div className="hud-value">HONEYCOMB v0.0.7</div>
+                </div>
+                <div className="hud-element">
+                  <div className="hud-label">SECURITY LEVEL</div>
+                  <div className="hud-value">MAXIMUM</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </main>
   );
 }
