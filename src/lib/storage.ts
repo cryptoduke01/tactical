@@ -34,134 +34,85 @@ export class StorageManager {
     return StorageManager.instance;
   }
 
-  // Save player profile
-  async savePlayerProfile(profile: PlayerProfile): Promise<boolean> {
+  // Save player profile with wallet address as key
+  savePlayerProfile(profile: PlayerProfile): void {
     try {
-      // Save to local storage
-      localStorage.setItem(
-        STORAGE_KEYS.PLAYER_PROFILE,
-        JSON.stringify(profile)
-      );
-
-      // Update last save timestamp
-      localStorage.setItem(STORAGE_KEYS.LAST_SAVE, Date.now().toString());
-
-      // Try to save to Honeycomb (this would require actual blockchain transaction)
-      await this.saveToHoneycomb(profile);
-
-      toast.success("Progress saved successfully!");
-      return true;
+      const key = `${STORAGE_KEYS.PLAYER_PROFILE}_${profile.walletAddress}`;
+      localStorage.setItem(key, JSON.stringify(profile));
+      localStorage.setItem(STORAGE_KEYS.LAST_SAVE, new Date().toISOString());
+      console.log(`Profile saved for wallet: ${profile.walletAddress}`);
     } catch (error) {
       console.error("Failed to save player profile:", error);
-      toast.error("Failed to save progress. Using local backup.");
-      return false;
     }
   }
 
-  // Load player profile
-  async loadPlayerProfile(
-    walletAddress: string
-  ): Promise<PlayerProfile | null> {
+  // Load player profile by wallet address
+  loadPlayerProfile(walletAddress: string): PlayerProfile | null {
     try {
-      // Try to load from local storage first
-      const localProfile = localStorage.getItem(STORAGE_KEYS.PLAYER_PROFILE);
-
-      if (localProfile) {
-        const profile = JSON.parse(localProfile);
-
-        // Check if this profile belongs to the current wallet
-        if (profile.wallet === walletAddress) {
-          toast.success("Progress loaded from local storage");
-          return profile;
-        }
+      const key = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
+      const data = localStorage.getItem(key);
+      if (data) {
+        const profile = JSON.parse(data);
+        console.log(`Profile loaded for wallet: ${walletAddress}`);
+        return profile;
       }
-
-      // Try to load from Honeycomb
-      const honeycombProfile = await this.loadFromHoneycomb(walletAddress);
-      if (honeycombProfile) {
-        // Save to local storage for future use
-        await this.savePlayerProfile(honeycombProfile);
-        toast.success("Progress loaded from blockchain");
-        return honeycombProfile;
-      }
-
-      // No profile found
       return null;
     } catch (error) {
       console.error("Failed to load player profile:", error);
-      toast.error("Failed to load progress");
       return null;
     }
   }
 
-  // Save heroes
-  async saveHeroes(walletAddress: string, heroes: Hero[]): Promise<boolean> {
+  // Save heroes with wallet address as key
+  saveHeroes(walletAddress: string, heroes: Hero[]): void {
     try {
-      const heroesData = {
-        walletAddress,
-        heroes,
-        lastUpdated: Date.now(),
-      };
-
-      localStorage.setItem(STORAGE_KEYS.HEROES, JSON.stringify(heroesData));
-
-      // Try to save to Honeycomb
-      await this.saveHeroesToHoneycomb(walletAddress, heroes);
-
-      toast.success("Hero collection saved!");
-      return true;
+      const key = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
+      localStorage.setItem(key, JSON.stringify(heroes));
+      console.log(`Heroes saved for wallet: ${walletAddress}`);
     } catch (error) {
       console.error("Failed to save heroes:", error);
-      toast.error("Failed to save heroes. Using local backup.");
-      return false;
     }
   }
 
-  // Load heroes
-  async loadHeroes(walletAddress: string): Promise<Hero[]> {
+  // Load heroes by wallet address
+  loadHeroes(walletAddress: string): Hero[] {
     try {
-      // Try local storage first
-      const localHeroes = localStorage.getItem(STORAGE_KEYS.HEROES);
-
-      if (localHeroes) {
-        const heroesData = JSON.parse(localHeroes);
-        if (heroesData.walletAddress === walletAddress) {
-          return heroesData.heroes;
-        }
+      const key = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
+      const data = localStorage.getItem(key);
+      if (data) {
+        const heroes = JSON.parse(data);
+        console.log(`Heroes loaded for wallet: ${walletAddress}`);
+        return heroes;
       }
-
-      // Try Honeycomb
-      const honeycombHeroes = await this.loadHeroesFromHoneycomb(walletAddress);
-      if (honeycombHeroes.length > 0) {
-        await this.saveHeroes(walletAddress, honeycombHeroes);
-        return honeycombHeroes;
-      }
-
-      // Return empty array if no heroes found
       return [];
     } catch (error) {
       console.error("Failed to load heroes:", error);
-      toast.error("Failed to load heroes");
       return [];
     }
   }
 
-  // Save game state
-  async saveGameState(gameState: GameState): Promise<boolean> {
+  // Save game state with wallet address as key
+  saveGameState(walletAddress: string, gameState: any): void {
     try {
-      localStorage.setItem(STORAGE_KEYS.GAME_STATE, JSON.stringify(gameState));
-      return true;
+      const key = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
+      localStorage.setItem(key, JSON.stringify(gameState));
+      console.log(`Game state saved for wallet: ${walletAddress}`);
     } catch (error) {
       console.error("Failed to save game state:", error);
-      return false;
     }
   }
 
-  // Load game state
-  async loadGameState(): Promise<GameState | null> {
+  // Load game state by wallet address
+  loadGameState(walletAddress: string): any {
     try {
-      const gameState = localStorage.getItem(STORAGE_KEYS.GAME_STATE);
-      return gameState ? JSON.parse(gameState) : null;
+      const key = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
+      const data = localStorage.getItem(key);
+      if (data) {
+        const gameState = JSON.parse(data);
+        console.log(`Game state loaded for wallet: ${walletAddress}`);
+        return gameState;
+      }
+      return null;
     } catch (error) {
       console.error("Failed to load game state:", error);
       return null;

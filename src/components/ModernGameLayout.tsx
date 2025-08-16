@@ -25,24 +25,29 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showOnboarding, setShowOnboarding] = useState(false);
-  const [solBalance, setSolBalance] = useState<number | null>(null);
+  const [solBalance, setSolBalance] = useState<string>('0.0000');
 
   // Fetch SOL balance
   useEffect(() => {
-    const fetchSolBalance = async () => {
+    const fetchSOLBalance = async () => {
       if (wallet.publicKey) {
         try {
-          // This would integrate with real Solana RPC
-          // For now, showing placeholder
-          setSolBalance(0.00);
+          // Simulate fetching SOL balance from devnet
+          // In a real app, you'd use connection.getBalance(wallet.publicKey)
+          const mockBalance = Math.random() * 10 + 1; // Random balance between 1-11 SOL
+          setSolBalance(mockBalance.toFixed(4));
         } catch (error) {
-          console.log('Could not fetch SOL balance:', error);
-          setSolBalance(null);
+          console.error('Failed to fetch SOL balance:', error);
+          setSolBalance('0.0000');
         }
       }
     };
 
-    fetchSolBalance();
+    fetchSOLBalance();
+
+    // Refresh balance every 30 seconds
+    const interval = setInterval(fetchSOLBalance, 30000);
+    return () => clearInterval(interval);
   }, [wallet.publicKey]);
 
   // Check if user has seen onboarding
@@ -259,10 +264,8 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
 
                 {/* SOL Balance */}
                 <div className="flex items-center gap-2">
-                  <span className="text-slate-300 text-sm">SOL:</span>
-                  <span className="text-[#14F195] font-bold text-lg">
-                    {solBalance !== null ? solBalance.toFixed(2) : '--'}
-                  </span>
+                  <div className="text-sm text-gray-300">SOL Balance</div>
+                  <div className="text-lg font-bold text-green-400">{solBalance} SOL</div>
                 </div>
               </div>
             </div>

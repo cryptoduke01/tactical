@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Hero, PlayerProfile } from '@/lib/heroManager';
 import { soundManager } from '@/lib/soundManager';
-import { showSuccess, showError, setGameplayMode } from '@/lib/toastManager';
+import { showSuccess, showError } from '@/lib/toastManager';
 
 interface BattleArenaProps {
   heroes: Hero[];
@@ -15,88 +15,283 @@ interface BattleCharacter {
   name: string;
   health: number;
   maxHealth: number;
-  power: number;
   position: { x: number; y: number };
   isAttacking: boolean;
   isDefending: boolean;
-  lastAction: string;
+  lastAction: number;
+  color: string;
+  size: number;
+}
+
+interface BattleLog {
+  id: string;
+  message: string;
+  timestamp: number;
+  type: 'attack' | 'defend' | 'special' | 'result';
 }
 
 export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleArenaProps) {
-  const [battleState, setBattleState] = useState<'idle' | 'hero-selection' | 'battle' | 'victory' | 'defeat'>('idle');
-  const [playerCharacter, setPlayerCharacter] = useState<BattleCharacter | null>(null);
-  const [opponentCharacter, setOpponentCharacter] = useState<BattleCharacter | null>(null);
-  const [battleLog, setBattleLog] = useState<string[]>([]);
-  const [isBattleActive, setIsBattleActive] = useState(false);
-  const [round, setRound] = useState(1);
-  const [playerHealth, setPlayerHealth] = useState(100);
-  const [opponentHealth, setOpponentHealth] = useState(100);
-  const [battleEffects, setBattleEffects] = useState<Array<{ id: string; type: string; x: number; y: number; timestamp: number }>>([]);
+  const [battleState, setBattleState] = useState<'idle' | 'hero-selection' | 'battling' | 'finished'>('idle');
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
+  const [opponent, setOpponent] = useState<BattleCharacter | null>(null);
+  const [playerCharacter, setPlayerCharacter] = useState<BattleCharacter | null>(null);
+  const [battleLog, setBattleLog] = useState<BattleLog[]>([]);
+  const [battleTime, setBattleTime] = useState(30);
+  const [isAutomated, setIsAutomated] = useState(false);
 
-  const battleCanvasRef = useRef<HTMLDivElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
+  const battleIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
-  // Initialize battle characters
+  // Initialize battle when hero is selected
   useEffect(() => {
-    if (heroes.length > 0 && !playerCharacter) {
-      const selectedHero = heroes[0]; // Use first hero for now
-      setPlayerCharacter({
-        id: selectedHero.id,
-        name: selectedHero.name,
-        health: selectedHero.health,
-        maxHealth: selectedHero.health,
-        power: selectedHero.power,
-        position: { x: 100, y: 150 },
-        isAttacking: false,
-        isDefending: false,
-        lastAction: ''
-      });
+    if (selectedHero && battleState === 'hero-selection') {
+      startBattle();
+    }
+  }, [selectedHero, battleState]);
 
-      // Create opponent from existing heroes (random selection)
-      if (heroes.length > 1) {
-        const randomOpponent = heroes[Math.floor(Math.random() * heroes.length)];
-        setOpponentCharacter({
-          id: randomOpponent.id,
-          name: randomOpponent.name,
-          health: randomOpponent.health,
-          maxHealth: randomOpponent.health,
-          power: randomOpponent.power,
-          position: { x: 500, y: 150 },
-          isAttacking: false,
-          isDefending: false,
-          lastAction: ''
-        });
+  // Battle timer
+  useEffect(() => {
+    if (battleState === 'battling' && battleTime > 0) {
+      const timer = setTimeout(() => {
+        setBattleTime(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (battleTime === 0) {
+      endBattle();
+    }
+  }, [battleTime, battleState]);
+
+  const startHeroSelection = () => {
+    if (heroes.length === 0) {
+      showError('No Heroes Available', 'You need at least one hero to enter battle!');
+      return;
+    }
+    setBattleState('hero-selection');
+    soundManager.playButtonClick();
+  };
+
+  const selectHeroForBattle = (hero: Hero) => {
+    setSelectedHero(hero);
+    setBattleState('battling');
+    soundManager.playButtonClick();
+  };
+
+  const startBattle = () => {
+    if (!selectedHero) return;
+
+    // Create player character
+    const playerChar: BattleCharacter = {
+      id: selectedHero.id,
+      name: selectedHero.name,
+      health: 100,
+      maxHealth: 100,
+      position: { x: 100, y: 200 },
+      isAttacking: false,
+      isDefending: false,
+      lastAction: 0,
+      color: '#14F195', // Solana green
+      size: 40
+    };
+
+    // Create opponent (random hero from player's collection)
+    const availableOpponents = heroes.filter(h => h.id !== selectedHero.id);
+    const randomOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
+
+    const opponentChar: BattleCharacter = {
+      id: randomOpponent?.id || 'opponent',
+      name: randomOpponent?.name || 'Dark Warrior',
+      health: 100,
+      maxHealth: 100,
+      position: { x: 500, y: 200 },
+      isAttacking: false,
+      isDefending: false,
+      lastAction: 0,
+      color: '#9945FF', // Solana purple
+      size: 40
+    };
+
+    setPlayerCharacter(playerChar);
+    setOpponent(opponentChar);
+    setBattleTime(30);
+    setBattleLog([]);
+    setIsAutomated(true);
+
+    // Start automated battle
+    startAutomatedBattle();
+
+    soundManager.playBattleSound();
+  };
+
+  const startAutomatedBattle = () => {
+    if (battleIntervalRef.current) {
+      clearInterval(battleIntervalRef.current);
+    }
+
+    battleIntervalRef.current = setInterval(() => {
+      if (playerCharacter && opponent) {
+        // Random actions for both characters
+        if (Math.random() > 0.5) {
+          performAttack('player');
+        } else {
+          performDefend('player');
+        }
+
+        setTimeout(() => {
+          if (opponent && playerCharacter) {
+            if (Math.random() > 0.5) {
+              performAttack('opponent');
+            } else {
+              performDefend('opponent');
+            }
+          }
+        }, 500);
+      }
+    }, 2000); // Action every 2 seconds
+  };
+
+  const performAttack = (attacker: 'player' | 'opponent') => {
+    if (!playerCharacter || !opponent) return;
+
+    const attackerChar = attacker === 'player' ? playerCharacter : opponent;
+    const defenderChar = attacker === 'player' ? opponent : playerCharacter;
+
+    // Calculate damage
+    const baseDamage = 15;
+    const randomDamage = Math.random() * 10;
+    const totalDamage = Math.floor(baseDamage + randomDamage);
+
+    // Update health
+    const newHealth = Math.max(0, defenderChar.health - totalDamage);
+
+    if (attacker === 'player') {
+      setOpponent(prev => prev ? { ...prev, health: newHealth } : null);
+    } else {
+      setPlayerCharacter(prev => prev ? { ...prev, health: newHealth } : null);
+    }
+
+    // Add battle log
+    const logEntry: BattleLog = {
+      id: Date.now().toString(),
+      message: `${attackerChar.name} attacks for ${totalDamage} damage!`,
+      timestamp: Date.now(),
+      type: 'attack'
+    };
+    setBattleLog(prev => [...prev, logEntry]);
+
+    // Set attacking animation
+    if (attacker === 'player') {
+      setPlayerCharacter(prev => prev ? { ...prev, isAttacking: true } : null);
+      setTimeout(() => setPlayerCharacter(prev => prev ? { ...prev, isAttacking: false } : null), 500);
+    } else {
+      setOpponent(prev => prev ? { ...prev, isAttacking: true } : null);
+      setTimeout(() => setOpponent(prev => prev ? { ...prev, isAttacking: false } : null), 500);
+    }
+
+    soundManager.playBattleSound();
+  };
+
+  const performDefend = (defender: 'player' | 'opponent') => {
+    if (!playerCharacter || !opponent) return;
+
+    const defenderChar = defender === 'player' ? playerCharacter : opponent;
+
+    // Add battle log
+    const logEntry: BattleLog = {
+      id: Date.now().toString(),
+      message: `${defenderChar.name} takes a defensive stance!`,
+      timestamp: Date.now(),
+      type: 'defend'
+    };
+    setBattleLog(prev => [...prev, logEntry]);
+
+    // Set defending animation
+    if (defender === 'player') {
+      setPlayerCharacter(prev => prev ? { ...prev, isDefending: true } : null);
+      setTimeout(() => setPlayerCharacter(prev => prev ? { ...prev, isDefending: false } : null), 1000);
+    } else {
+      setOpponent(prev => prev ? { ...prev, isDefending: true } : null);
+      setTimeout(() => setOpponent(prev => prev ? { ...prev, isDefending: false } : null), 1000);
+    }
+  };
+
+  const endBattle = () => {
+    if (battleIntervalRef.current) {
+      clearInterval(battleIntervalRef.current);
+    }
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+
+    setIsAutomated(false);
+    setBattleState('finished');
+
+    // Determine winner
+    if (playerCharacter && opponent) {
+      const playerWon = playerCharacter.health > opponent.health;
+      const xpGained = playerWon ? Math.floor(Math.random() * 50) + 50 : -(Math.floor(Math.random() * 30) + 20);
+
+      const resultLog: BattleLog = {
+        id: Date.now().toString(),
+        message: playerWon ? 'Victory! You won the battle!' : 'Defeat! Better luck next time!',
+        timestamp: Date.now(),
+        type: 'result'
+      };
+      setBattleLog(prev => [...prev, resultLog]);
+
+      onBattleComplete({ winner: playerWon, xpGained });
+
+      if (playerWon) {
+        showSuccess('Battle Won!', `You gained ${xpGained} XP!`);
+      } else {
+        showError('Battle Lost', `You lost ${Math.abs(xpGained)} XP!`);
       }
     }
-  }, [heroes, playerCharacter]);
+  };
 
-  // Battle animation loop
+  const resetBattle = () => {
+    setBattleState('idle');
+    setSelectedHero(null);
+    setOpponent(null);
+    setPlayerCharacter(null);
+    setBattleLog([]);
+    setBattleTime(30);
+    setIsAutomated(false);
+
+    if (battleIntervalRef.current) {
+      clearInterval(battleIntervalRef.current);
+    }
+
+    if (animationFrameRef.current) {
+      cancelAnimationFrame(animationFrameRef.current);
+    }
+  };
+
+  // Animation loop
   useEffect(() => {
-    if (isBattleActive && battleState === 'battle') {
+    if (battleState === 'battling' && playerCharacter && opponent) {
       const animate = () => {
-        setBattleEffects(prev => prev.filter(effect => Date.now() - effect.timestamp < 1000));
+        if (playerCharacter && opponent) {
+          // Move characters slightly for animation
+          setPlayerCharacter(prev => prev ? {
+            ...prev,
+            position: {
+              x: prev.position.x + (Math.random() - 0.5) * 2,
+              y: prev.position.y + (Math.random() - 0.5) * 2
+            }
+          } : null);
 
-        // Move characters slightly
-        setPlayerCharacter(prev => prev ? {
-          ...prev,
-          position: {
-            x: prev.position.x + (Math.random() - 0.5) * 2,
-            y: prev.position.y + (Math.random() - 0.5) * 2
-          }
-        } : null);
-
-        setOpponentCharacter(prev => prev ? {
-          ...prev,
-          position: {
-            x: prev.position.x + (Math.random() - 0.5) * 2,
-            y: prev.position.y + (Math.random() - 0.5) * 2
-          }
-        } : null);
-
+          setOpponent(prev => prev ? {
+            ...prev,
+            position: {
+              x: prev.position.x + (Math.random() - 0.5) * 2,
+              y: prev.position.y + (Math.random() - 0.5) * 2
+            }
+          } : null);
+        }
         animationFrameRef.current = requestAnimationFrame(animate);
       };
-
       animate();
     }
 
@@ -105,228 +300,162 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
         cancelAnimationFrame(animationFrameRef.current);
       }
     };
-  }, [isBattleActive, battleState]);
+  }, [battleState, playerCharacter, opponent]);
 
-  const startHeroSelection = () => {
-    setBattleState('hero-selection');
-  };
+  // Render battle scene
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas || battleState !== 'battling') return;
 
-  const selectHeroForBattle = (hero: Hero) => {
-    setSelectedHero(hero);
-    setPlayerCharacter({
-      id: hero.id,
-      name: hero.name,
-      health: hero.health,
-      maxHealth: hero.health,
-      power: hero.power,
-      position: { x: 100, y: 150 },
-      isAttacking: false,
-      isDefending: false,
-      lastAction: ''
-    });
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
 
-    // Select random opponent from remaining heroes
-    const availableOpponents = heroes.filter(h => h.id !== hero.id);
-    if (availableOpponents.length > 0) {
-      const randomOpponent = availableOpponents[Math.floor(Math.random() * availableOpponents.length)];
-      setOpponentCharacter({
-        id: randomOpponent.id,
-        name: randomOpponent.name,
-        health: randomOpponent.health,
-        maxHealth: randomOpponent.health,
-        power: randomOpponent.power,
-        position: { x: 500, y: 150 },
-        isAttacking: false,
-        isDefending: false,
-        lastAction: ''
-      });
+    // Clear canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // Draw background
+    ctx.fillStyle = '#0f172a';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid lines
+    ctx.strokeStyle = '#1e293b';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < canvas.width; i += 50) {
+      ctx.beginPath();
+      ctx.moveTo(i, 0);
+      ctx.lineTo(i, canvas.height);
+      ctx.stroke();
+    }
+    for (let i = 0; i < canvas.height; i += 50) {
+      ctx.beginPath();
+      ctx.moveTo(0, i);
+      ctx.lineTo(canvas.width, i);
+      ctx.stroke();
     }
 
-    setBattleState('idle');
-  };
+    // Draw player character
+    if (playerCharacter) {
+      ctx.fillStyle = playerCharacter.color;
+      ctx.fillRect(
+        playerCharacter.position.x - playerCharacter.size / 2,
+        playerCharacter.position.y - playerCharacter.size / 2,
+        playerCharacter.size,
+        playerCharacter.size
+      );
 
-  const startBattle = () => {
-    if (!playerCharacter || !opponentCharacter) return;
+      // Draw health bar
+      const healthBarWidth = 60;
+      const healthBarHeight = 8;
+      const healthPercentage = playerCharacter.health / playerCharacter.maxHealth;
 
-    // Enable gameplay mode to reduce toast spam
-    setGameplayMode(true);
+      ctx.fillStyle = '#374151';
+      ctx.fillRect(
+        playerCharacter.position.x - healthBarWidth / 2,
+        playerCharacter.position.y - playerCharacter.size / 2 - 20,
+        healthBarWidth,
+        healthBarHeight
+      );
 
-    soundManager.playBattle();
-    setIsBattleActive(true);
-    setBattleState('battle');
-    setRound(1);
-    setPlayerHealth(playerCharacter.maxHealth);
-    setOpponentHealth(opponentCharacter.maxHealth);
-    setBattleLog(['Battle started!', `${playerCharacter.name} vs ${opponentCharacter.name}`]);
+      ctx.fillStyle = '#14F195';
+      ctx.fillRect(
+        playerCharacter.position.x - healthBarWidth / 2,
+        playerCharacter.position.y - playerCharacter.size / 2 - 20,
+        healthBarWidth * healthPercentage,
+        healthBarHeight
+      );
 
-    // Add initial battle effects
-    addBattleEffect('battle-start', 300, 150);
-
-    // Start automated battle after a short delay
-    setTimeout(() => {
-      if (isBattleActive && battleState === 'battle') {
-        startAutomatedBattle();
-      }
-    }, 2000);
-  };
-
-  const startAutomatedBattle = () => {
-    if (!isBattleActive || battleState !== 'battle') return;
-
-    // Set battle duration to 20-30 seconds
-    const battleDuration = 20000 + Math.random() * 10000; // 20-30 seconds
-
-    const battleInterval = setInterval(() => {
-      if (!isBattleActive || battleState !== 'battle') {
-        clearInterval(battleInterval);
-        return;
-      }
-
-      // Randomly choose attacker
-      const attacker = Math.random() > 0.5 ? 'player' : 'opponent';
-      performAttack(attacker);
-
-      // Check if battle should end
-      if (playerHealth <= 0 || opponentHealth <= 0) {
-        clearInterval(battleInterval);
-      }
-    }, 1500); // Battle round every 1.5 seconds
-
-    // End battle after duration
-    setTimeout(() => {
-      if (isBattleActive && battleState === 'battle') {
-        // Determine winner based on remaining health
-        const playerWon = playerHealth > opponentHealth;
-        endBattle(playerWon);
-        clearInterval(battleInterval);
-      }
-    }, battleDuration);
-  };
-
-  const performAttack = (attacker: 'player' | 'opponent') => {
-    if (!isBattleActive || battleState !== 'battle') return;
-
-    const attackerChar = attacker === 'player' ? playerCharacter : opponentCharacter;
-    const defenderChar = attacker === 'player' ? opponentCharacter : playerCharacter;
-
-    if (!attackerChar || !defenderChar) return;
-
-    soundManager.playBattle();
-
-    // Calculate damage
-    const damage = Math.floor(attackerChar.power * (0.8 + Math.random() * 0.4));
-    const newHealth = Math.max(0, defenderChar.health - damage);
-
-    // Update health
-    if (attacker === 'player') {
-      setOpponentHealth(newHealth);
-      setPlayerCharacter(prev => prev ? { ...prev, isAttacking: true, lastAction: 'attack' } : null);
-    } else {
-      setPlayerHealth(newHealth);
-      setOpponentCharacter(prev => prev ? { ...prev, isAttacking: true, lastAction: 'attack' } : null);
+      // Draw name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(playerCharacter.name, playerCharacter.position.x, playerCharacter.position.y - playerCharacter.size / 2 - 30);
     }
 
-    // Add battle effects
-    const effectX = attacker === 'player' ? 400 : 200;
-    addBattleEffect('sword', effectX, 150);
-    addBattleEffect('fire', effectX, 150);
+    // Draw opponent
+    if (opponent) {
+      ctx.fillStyle = opponent.color;
+      ctx.fillRect(
+        opponent.position.x - opponent.size / 2,
+        opponent.position.y - opponent.size / 2,
+        opponent.size,
+        opponent.size
+      );
 
-    // Update battle log
-    setBattleLog(prev => [...prev, `${attackerChar.name} attacks for ${damage} damage!`]);
+      // Draw health bar
+      const healthBarWidth = 60;
+      const healthBarHeight = 8;
+      const healthPercentage = opponent.health / opponent.maxHealth;
 
-    // Check for battle end
-    if (newHealth <= 0) {
-      endBattle(attacker === 'player');
-      return;
+      ctx.fillStyle = '#374151';
+      ctx.fillRect(
+        opponent.position.x - healthBarWidth / 2,
+        opponent.position.y - opponent.size / 2 - 20,
+        healthBarWidth,
+        healthBarHeight
+      );
+
+      ctx.fillStyle = '#9945FF';
+      ctx.fillRect(
+        opponent.position.x - healthBarWidth / 2,
+        opponent.position.y - opponent.size / 2 - 20,
+        healthBarWidth * healthPercentage,
+        healthBarHeight
+      );
+
+      // Draw name
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(opponent.name, opponent.position.x, opponent.position.y - opponent.size / 2 - 30);
     }
 
-    // Reset attack state after animation
-    setTimeout(() => {
-      if (attacker === 'player') {
-        setPlayerCharacter(prev => prev ? { ...prev, isAttacking: false } : null);
-      } else {
-        setOpponentCharacter(prev => prev ? { ...prev, isAttacking: false } : null);
-      }
-    }, 500);
-
-    // AI opponent turn
-    if (attacker === 'player') {
-      setTimeout(() => {
-        if (isBattleActive && battleState === 'battle') {
-          performAttack('opponent');
-        }
-      }, 1000);
+    // Draw battle effects
+    if (playerCharacter?.isAttacking) {
+      ctx.fillStyle = '#fbbf24';
+      ctx.beginPath();
+      ctx.arc(playerCharacter.position.x + 30, playerCharacter.position.y, 20, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    setRound(prev => prev + 1);
-  };
-
-  const addBattleEffect = (type: string, x: number, y: number) => {
-    const effect = {
-      id: `effect-${Date.now()}`,
-      type,
-      x,
-      y,
-      timestamp: Date.now()
-    };
-    setBattleEffects(prev => [...prev, effect]);
-  };
-
-  const endBattle = (playerWon: boolean) => {
-    // Disable gameplay mode after battle
-    setGameplayMode(false);
-
-    setIsBattleActive(false);
-    setBattleState(playerWon ? 'victory' : 'defeat');
-
-    // XP rewards/penalties
-    let xpGained = 0;
-    let xpLost = 0;
-
-    if (playerWon) {
-      xpGained = Math.floor(50 + Math.random() * 50); // 50-100 XP for winning
-      showSuccess('Battle Won!', `Congratulations! You gained ${xpGained} XP!`);
-    } else {
-      xpLost = Math.floor(20 + Math.random() * 30); // 20-50 XP lost for losing
-      showError('Battle Lost', `You lost ${xpLost} XP. Better luck next time!`);
+    if (opponent?.isAttacking) {
+      ctx.fillStyle = '#ef4444';
+      ctx.beginPath();
+      ctx.arc(opponent.position.x - 30, opponent.position.y, 20, 0, Math.PI * 2);
+      ctx.fill();
     }
 
-    setBattleLog(prev => [
-      ...prev,
-      playerWon ? 'Victory! You defeated the opponent!' : 'Defeat! Better luck next time!',
-      playerWon ? `XP gained: +${xpGained}` : `XP lost: -${xpLost}`
-    ]);
+  }, [battleState, playerCharacter, opponent]);
 
-    // Call battle complete callback with XP changes
-    onBattleComplete({
-      winner: playerWon,
-      xpGained: playerWon ? xpGained : -xpLost
-    });
-
-    if (playerWon) {
-      soundManager.playSuccess();
-    } else {
-      soundManager.playError();
-    }
-  };
-
-  const resetBattle = () => {
-    setBattleState('idle');
-    setIsBattleActive(false);
-    setRound(1);
-    setPlayerHealth(playerCharacter?.maxHealth || 100);
-    setOpponentHealth(opponentCharacter?.maxHealth || 120);
-    setBattleLog([]);
-    setBattleEffects([]);
-  };
-
-  if (!playerCharacter || !opponentCharacter) {
+  if (battleState === 'hero-selection') {
     return (
-      <div className="game-panel p-6">
-        <div className="text-center py-12">
-          <div className="text-6xl mb-4">⚔️</div>
-          <h3 className="text-2xl font-bold text-white mb-4">No Heroes Available</h3>
-          <p className="text-slate-300">You need at least one hero to enter the battle arena.</p>
+      <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div className="solana-card p-8 max-w-md w-full mx-4">
+          <h3 className="text-2xl font-bold text-white mb-6 text-center">Select Your Hero</h3>
+          <div className="space-y-3">
+            {heroes.map(hero => (
+              <button
+                key={hero.id}
+                onClick={() => selectHeroForBattle(hero)}
+                className="w-full solana-button-secondary text-left p-4 rounded-lg"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center text-2xl">
+                    {hero.emoji}
+                  </div>
+                  <div>
+                    <div className="font-bold text-white">{hero.name}</div>
+                    <div className="text-sm text-gray-300">Level {hero.level}</div>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+          <button
+            onClick={() => setBattleState('idle')}
+            className="w-full mt-4 solana-button-secondary"
+          >
+            Cancel
+          </button>
         </div>
       </div>
     );
@@ -335,255 +464,141 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
   return (
     <div className="space-y-6">
       {/* Battle Header */}
-      <div className="game-panel p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-3xl font-bold text-white">⚔️ Battle Arena</h2>
-          <div className="text-[#14F195] font-semibold">Round {round}</div>
-        </div>
-
-        {/* Health Bars */}
-        <div className="space-y-3">
+      <div className="solana-card p-6">
+        <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
           <div>
-            <div className="flex justify-between text-sm text-white mb-1">
-              <span>{playerCharacter.name}</span>
-              <span>{playerHealth} HP</span>
-            </div>
-            <div className="battle-health-bar">
-              <div
-                className="battle-health-fill player transition-all duration-500"
-                style={{ width: `${(playerHealth / playerCharacter.maxHealth) * 100}%` }}
-              ></div>
-            </div>
+            <h2 className="text-2xl font-bold text-white mb-2">⚔️ Battle Arena</h2>
+            <p className="text-gray-300">Fight for glory and XP rewards!</p>
           </div>
 
-          <div>
-            <div className="flex justify-between text-sm text-white mb-1">
-              <span>{opponentCharacter.name}</span>
-              <span>{opponentHealth} HP</span>
-            </div>
-            <div className="battle-health-bar">
-              <div
-                className="battle-health-fill opponent transition-all duration-500"
-                style={{ width: `${(opponentHealth / opponentCharacter.maxHealth) * 100}%` }}
-              ></div>
-            </div>
+          <div className="flex items-center gap-4">
+            {battleState === 'battling' && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-green-400">{battleTime}s</div>
+                <div className="text-sm text-gray-400">Time Remaining</div>
+              </div>
+            )}
+
+            {battleState === 'idle' && (
+              <button
+                onClick={startHeroSelection}
+                className="solana-button"
+              >
+                🚀 Enter Battle
+              </button>
+            )}
+
+            {battleState === 'battling' && (
+              <button
+                onClick={endBattle}
+                className="solana-button-secondary"
+              >
+                ⏹️ Stop Battle
+              </button>
+            )}
+
+            {battleState === 'finished' && (
+              <button
+                onClick={resetBattle}
+                className="solana-button"
+              >
+                🔄 New Battle
+              </button>
+            )}
           </div>
         </div>
       </div>
 
-      {/* 2D Battle Arena */}
-      <div className="game-panel p-6">
-        <div className="text-center mb-4">
-          <h3 className="text-2xl font-bold text-white mb-2">🎮 LIVE 2D BATTLEFIELD</h3>
-          <p className="text-slate-300">Watch your heroes engage in tactical combat!</p>
-        </div>
-
+      {/* Battle Arena */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Battle Canvas */}
-        <div
-          ref={battleCanvasRef}
-          className="battle-arena-2d h-96 relative overflow-hidden"
-        >
-          {/* Background Grid */}
-          <div className="absolute inset-0 opacity-20">
-            <div className="w-full h-full" style={{
-              backgroundImage: `
-                linear-gradient(rgba(153, 69, 255, 0.3) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(153, 69, 255, 0.3) 1px, transparent 1px)
-              `,
-              backgroundSize: '20px 20px'
-            }}></div>
-          </div>
+        <div className="lg:col-span-2">
+          <div className="solana-card p-4">
+            <canvas
+              ref={canvasRef}
+              width={600}
+              height={400}
+              className="w-full h-auto border border-gray-700 rounded-lg"
+            />
 
-          {/* Player Character */}
-          {playerCharacter && (
-            <div
-              className={`battle-character player ${playerCharacter.isAttacking ? 'animate-pulse' : ''}`}
-              style={{
-                left: `${playerCharacter.position.x}px`,
-                top: `${playerCharacter.position.y}px`
-              }}
-            >
-              {playerCharacter.lastAction === 'attack' ? '⚔️' : '🛡️'}
-            </div>
-          )}
-
-          {/* Opponent Character */}
-          {opponentCharacter && (
-            <div
-              className={`battle-character opponent ${opponentCharacter.isAttacking ? 'animate-pulse' : ''}`}
-              style={{
-                left: `${opponentCharacter.position.x}px`,
-                top: `${opponentCharacter.position.y}px`
-              }}
-            >
-              {opponentCharacter.lastAction === 'attack' ? '⚔️' : '👹'}
-            </div>
-          )}
-
-          {/* Battle Effects */}
-          {battleEffects.map(effect => (
-            <div
-              key={effect.id}
-              className="battle-effect"
-              style={{ left: `${effect.x}px`, top: `${effect.y}px` }}
-            >
-              {effect.type === 'sword' && <span className="battle-sword">⚔️</span>}
-              {effect.type === 'fire' && <span className="battle-fire">🔥</span>}
-              {effect.type === 'battle-start' && <span className="text-[#14F195] text-4xl animate-ping">⚡</span>}
-            </div>
-          ))}
-
-          {/* Battle Status */}
-          <div className="absolute top-4 left-4 bg-slate-800/80 backdrop-blur-sm rounded-lg p-3 border border-slate-600/50">
-            <div className="text-white text-sm">
-              <div className="font-semibold">Battle Status</div>
-              <div className="text-[#14F195]">Active</div>
-            </div>
+            {battleState === 'idle' && (
+              <div className="text-center py-8 text-gray-400">
+                <div className="text-4xl mb-4">⚔️</div>
+                <p>Select a hero to enter the battle arena</p>
+              </div>
+            )}
           </div>
         </div>
 
-        {/* Battle Controls */}
-        <div className="flex justify-center gap-4 mt-6">
-          {battleState === 'idle' && (
-            <div className="flex gap-4">
-              <button
-                onClick={startHeroSelection}
-                className="solana-button px-8 py-3 text-lg"
-              >
-                🎯 Select Hero
-              </button>
-              {selectedHero && (
-                <button
-                  onClick={startBattle}
-                  className="solana-button success px-8 py-3 text-lg"
-                >
-                  🚀 Start Battle
-                </button>
-              )}
-            </div>
-          )}
+        {/* Battle Log */}
+        <div className="lg:col-span-1">
+          <div className="solana-card p-4 h-[400px] overflow-y-auto">
+            <h3 className="text-lg font-bold text-white mb-4">Battle Log</h3>
 
-          {battleState === 'hero-selection' && (
-            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
-              <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-slate-600/50 rounded-xl p-6 max-w-2xl w-full transform transition-all duration-300 scale-100 animate-bounce-in">
-                <div className="text-center mb-4">
-                  <h3 className="text-xl font-bold text-white mb-2">Select Battle Hero</h3>
-                  <p className="text-slate-300 text-sm">Choose your champion</p>
-                </div>
-
-                {heroes.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-4xl mb-3">⚔️</div>
-                    <p className="text-slate-200 mb-2">No heroes available!</p>
-                    <p className="text-slate-300 text-sm">Summon heroes first in Hero Collection.</p>
-                    <button
-                      onClick={() => setBattleState('idle')}
-                      className="solana-button mt-3 px-4 py-2 text-sm"
-                    >
-                      Go Back
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
-                    {heroes.map((hero, index) => (
-                      <div
-                        key={hero.id}
-                        onClick={() => selectHeroForBattle(hero)}
-                        className="game-card p-3 cursor-pointer hover:scale-105 transition-all duration-200 border-2 hover:border-[#9945FF]/70 transform hover:-translate-y-1"
-                        style={{ animationDelay: `${index * 0.1}s` }}
-                      >
-                        <div className="text-center">
-                          <div className="text-2xl mb-1">⚔️</div>
-                          <h4 className="text-base font-bold text-white mb-1">{hero.name}</h4>
-                          <div className="text-xs text-slate-300 mb-1">
-                            Power: <span className="text-[#14F195]">{hero.power}</span> |
-                            Health: <span className="text-[#14F195]">{hero.health}</span>
-                          </div>
-                          <div className={`inline-block px-2 py-1 rounded text-xs font-semibold ${hero.rarity === 'legendary' ? 'text-[#9945FF] border-[#9945FF]/50' :
-                              hero.rarity === 'epic' ? 'text-[#14F195] border-[#14F195]/50' :
-                                hero.rarity === 'rare' ? 'text-blue-400 border-blue-400/50' :
-                                  'text-green-400 border-green-400/50'
-                            } border`}>
-                            {hero.rarity.toUpperCase()}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-
-                <div className="text-center mt-4">
-                  <button
-                    onClick={() => setBattleState('idle')}
-                    className="solana-button secondary px-4 py-2 text-sm"
+            {battleLog.length === 0 ? (
+              <div className="text-gray-400 text-center py-8">
+                <p>Battle log will appear here...</p>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                {battleLog.slice(-10).map(log => (
+                  <div
+                    key={log.id}
+                    className={`p-2 rounded text-sm ${log.type === 'attack' ? 'bg-red-500/20 text-red-300' :
+                      log.type === 'defend' ? 'bg-blue-500/20 text-blue-300' :
+                        log.type === 'result' ? 'bg-green-500/20 text-green-300' :
+                          'bg-gray-500/20 text-gray-300'
+                      }`}
                   >
-                    Cancel
-                  </button>
+                    {log.message}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Battle Status */}
+      {battleState === 'battling' && playerCharacter && opponent && (
+        <div className="solana-card p-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Player Status */}
+            <div>
+              <h4 className="text-lg font-bold text-green-400 mb-3">Your Hero</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Health:</span>
+                  <span className="text-white font-bold">{playerCharacter.health}/{playerCharacter.maxHealth}</span>
+                </div>
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-green-400 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(playerCharacter.health / playerCharacter.maxHealth) * 100}%` }}
+                  ></div>
                 </div>
               </div>
             </div>
-          )}
 
-          {battleState === 'battle' && isBattleActive && (
-            <div className="text-center">
-              <div className="text-2xl text-[#14F195] mb-4">⚔️ Automated Battle in Progress ⚔️</div>
-              <button
-                onClick={() => {
-                  setIsBattleActive(false);
-                  setBattleState('idle');
-                }}
-                className="solana-button warning px-6 py-2"
-              >
-                🛑 Stop Battle
-              </button>
-            </div>
-          )}
-
-          {battleState === 'victory' && (
-            <div className="text-center">
-              <div className="text-6xl mb-4">🎉</div>
-              <h3 className="text-2xl font-bold text-[#14F195] mb-4">Victory!</h3>
-              <button
-                onClick={resetBattle}
-                className="solana-button px-6 py-2"
-              >
-                Fight Again
-              </button>
-            </div>
-          )}
-
-          {battleState === 'defeat' && (
-            <div className="text-center">
-              <div className="text-6xl mb-4">💀</div>
-              <h3 className="text-2xl font-bold text-red-400 mb-4">Defeat</h3>
-              <button
-                onClick={resetBattle}
-                className="solana-button px-6 py-2"
-              >
-                Try Again
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Battle Log */}
-      <div className="game-panel p-6">
-        <h3 className="text-xl font-bold text-white mb-4">📜 Battle Log</h3>
-        <div className="bg-slate-800/50 rounded-lg p-4 h-48 overflow-y-auto custom-scrollbar">
-          {battleLog.length === 0 ? (
-            <p className="text-slate-400 text-center py-8">Battle log will appear here...</p>
-          ) : (
-            <div className="space-y-2">
-              {battleLog.map((log, index) => (
-                <div key={index} className="text-slate-200 text-sm">
-                  <span className="text-[#14F195]">[{new Date().toLocaleTimeString()}]</span> {log}
+            {/* Opponent Status */}
+            <div>
+              <h4 className="text-lg font-bold text-purple-400 mb-3">Opponent</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Health:</span>
+                  <span className="text-white font-bold">{opponent.health}/{opponent.maxHealth}</span>
                 </div>
-              ))}
+                <div className="w-full bg-gray-700 rounded-full h-2">
+                  <div
+                    className="bg-purple-400 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${(opponent.health / opponent.maxHealth) * 100}%` }}
+                  ></div>
+                </div>
+              </div>
             </div>
-          )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 } 

@@ -175,6 +175,16 @@ export class HeroManager {
     }
   }
 
+  // Save player profile
+  async savePlayerProfile(profile: PlayerProfile): Promise<void> {
+    try {
+      storageManager.savePlayerProfile(profile);
+      console.log("Profile saved to storage");
+    } catch (error) {
+      console.error("Failed to save profile:", error);
+    }
+  }
+
   // Update player XP
   async updatePlayerXP(walletAddress: string, xpChange: number): Promise<void> {
     try {
@@ -212,39 +222,48 @@ export class HeroManager {
   // Get player profile
   async getPlayerProfile(walletAddress: string): Promise<PlayerProfile | null> {
     try {
-      return await storageManager.loadPlayerProfile(walletAddress);
+      // Try to load from storage first
+      const storedProfile = storageManager.loadPlayerProfile(walletAddress);
+      if (storedProfile) {
+        console.log("Profile loaded from storage:", storedProfile.name);
+        return storedProfile;
+      }
+
+      // If no stored profile, create a new one
+      console.log("No stored profile found, creating new one");
+      return await this.createPlayerProfile(walletAddress);
     } catch (error) {
-      console.error("Error getting player profile:", error);
+      console.error("Failed to get player profile:", error);
       return null;
     }
   }
 
+  // Get player heroes
   async getPlayerHeroes(walletAddress: string): Promise<Hero[]> {
     try {
-      console.log("Fetching heroes for wallet:", walletAddress);
-
       // Try to load from storage first
-      const storedHeroes = await storageManager.loadHeroes(walletAddress);
+      const storedHeroes = storageManager.loadHeroes(walletAddress);
       if (storedHeroes.length > 0) {
-        showSuccess(
-          "Heroes Loaded",
-          "Heroes loaded from storage successfully!"
-        );
+        console.log("Heroes loaded from storage:", storedHeroes.length);
         return storedHeroes;
       }
 
-      // If no stored heroes, return starter heroes
-      const starterHeroes = this.getStarterHeroes();
-
-      // Save starter heroes to storage
-      await storageManager.saveHeroes(walletAddress, starterHeroes);
-
-      showSuccess("Starter Heroes", "Starter heroes assigned successfully!");
-      return starterHeroes;
+      // If no stored heroes, return empty array
+      console.log("No stored heroes found");
+      return [];
     } catch (error) {
-      console.error("Error fetching heroes:", error);
-      showError("Hero Loading Failed", "Failed to load heroes");
-      return this.getStarterHeroes();
+      console.error("Failed to get player heroes:", error);
+      return [];
+    }
+  }
+
+  // Save player heroes
+  async savePlayerHeroes(walletAddress: string, heroes: Hero[]): Promise<void> {
+    try {
+      storageManager.saveHeroes(walletAddress, heroes);
+      console.log("Heroes saved to storage");
+    } catch (error) {
+      console.error("Failed to save heroes:", error);
     }
   }
 
@@ -464,7 +483,7 @@ export class HeroManager {
       const updatedHeroes = [...currentHeroes, newHero];
 
       // Save updated hero collection
-      await storageManager.saveHeroes(walletAddress, updatedHeroes);
+      await this.savePlayerHeroes(walletAddress, updatedHeroes);
 
       showSuccess(
         "Hero Created",
@@ -508,7 +527,7 @@ export class HeroManager {
       hero.power = this.calculateHeroPower(hero);
 
       // Save updated heroes
-      await storageManager.saveHeroes(walletAddress, currentHeroes);
+      await this.savePlayerHeroes(walletAddress, currentHeroes);
 
       showSuccess("Hero Updated", "Hero traits updated successfully!");
       return hero;
@@ -530,7 +549,7 @@ export class HeroManager {
       );
 
       // Load current profile
-      const profile = await storageManager.loadPlayerProfile(walletAddress);
+      const profile = await this.getPlayerProfile(walletAddress);
       if (!profile) {
         throw new Error("Player profile not found");
       }
@@ -554,7 +573,7 @@ export class HeroManager {
       }
 
       // Save updated profile
-      await storageManager.savePlayerProfile(updatedProfile);
+      await this.savePlayerProfile(updatedProfile);
 
       showSuccess(
         "Quest Completed",
@@ -576,7 +595,7 @@ export class HeroManager {
       console.log(`Updating player ${walletAddress} stats:`, updates);
 
       // Load current profile
-      const profile = await storageManager.loadPlayerProfile(walletAddress);
+      const profile = await this.getPlayerProfile(walletAddress);
       if (!profile) {
         throw new Error("Player profile not found");
       }
@@ -589,7 +608,7 @@ export class HeroManager {
       };
 
       // Save updated profile
-      await storageManager.savePlayerProfile(updatedProfile);
+      await this.savePlayerProfile(updatedProfile);
 
       showSuccess("Stats Updated", "Player stats updated successfully!");
       return updatedProfile;
@@ -620,8 +639,8 @@ export class HeroManager {
   ): Promise<boolean> {
     try {
       await Promise.all([
-        storageManager.savePlayerProfile(profile),
-        storageManager.saveHeroes(walletAddress, heroes),
+        this.savePlayerProfile(profile),
+        this.savePlayerHeroes(walletAddress, heroes),
       ]);
 
       showSuccess("Game Saved", "Game progress saved successfully!");
@@ -639,8 +658,8 @@ export class HeroManager {
   ): Promise<{ profile: PlayerProfile | null; heroes: Hero[] }> {
     try {
       const [profile, heroes] = await Promise.all([
-        storageManager.loadPlayerProfile(walletAddress),
-        storageManager.loadHeroes(walletAddress),
+        this.getPlayerProfile(walletAddress),
+        this.getPlayerHeroes(walletAddress),
       ]);
 
       return { profile, heroes };

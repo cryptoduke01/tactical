@@ -116,6 +116,7 @@ export function CryptoLegendsArena() {
             heroes={heroes}
             onHeroUpdate={(updatedHeroes: Hero[]) => setHeroes(updatedHeroes)}
             heroManager={heroManager}
+            playerProfile={playerProfile}
           />
         )}
 

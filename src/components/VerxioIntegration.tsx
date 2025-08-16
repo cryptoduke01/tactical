@@ -1,6 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react';
-import { verxioManager, VerxioLoyaltyProgram } from '@/lib/verxioManager';
+import { verxioManager, VerxioLoyaltyPass } from '@/lib/verxioManager';
 import { PlayerProfile } from '@/lib/heroManager';
 import { soundManager } from '@/lib/soundManager';
 import { showSuccess, showError } from '@/lib/toastManager';
@@ -10,219 +10,264 @@ interface VerxioIntegrationProps {
 }
 
 export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
-  const [loyaltyProgram, setLoyaltyProgram] = useState<VerxioLoyaltyProgram | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showLoyaltyDetails, setShowLoyaltyDetails] = useState(false);
+  const [loyaltyProgram, setLoyaltyProgram] = useState<any>(null);
+  const [isInitializing, setIsInitializing] = useState(false);
+  const [isMinting, setIsMinting] = useState(false);
+  const [mintAddress, setMintAddress] = useState('');
+  const [mintName, setMintName] = useState('');
 
   useEffect(() => {
-    // Load loyalty program data
-    const loadLoyaltyProgram = async () => {
-      if (verxioManager.isReady()) {
-        const program = verxioManager.getLoyaltyProgram();
-        if (program) {
-          setLoyaltyProgram(program);
-        } else {
-          // Try to create the program
-          setIsLoading(true);
-          try {
-            const newProgram = await verxioManager.createGameLoyaltyProgram();
-            if (newProgram) {
-              setLoyaltyProgram(newProgram);
-              showSuccess('Loyalty Program', 'Game loyalty program created successfully!');
-            }
-          } catch (error) {
-            console.error('Failed to create loyalty program:', error);
-            showError('Loyalty Program', 'Failed to create loyalty program');
-          } finally {
-            setIsLoading(false);
-          }
-        }
-      }
-    };
-
-    loadLoyaltyProgram();
+    // Check if loyalty program exists
+    const program = verxioManager.getLoyaltyProgram();
+    if (program) {
+      setLoyaltyProgram(program);
+    }
   }, []);
 
-  const handleCreateLoyaltyProgram = async () => {
-    setIsLoading(true);
+  const initializeProtocol = async () => {
+    setIsInitializing(true);
     try {
       const program = await verxioManager.createGameLoyaltyProgram();
       if (program) {
         setLoyaltyProgram(program);
-        showSuccess('Loyalty Program', 'Game loyalty program created successfully!');
+        showSuccess('Protocol Initialized', 'Verxio loyalty program created successfully!');
         soundManager.playSuccess();
+      } else {
+        showError('Initialization Failed', 'Failed to create loyalty program');
       }
     } catch (error) {
-      console.error('Failed to create loyalty program:', error);
-      showError('Loyalty Program', 'Failed to create loyalty program');
-      soundManager.playError();
+      showError('Initialization Error', 'Failed to initialize Verxio Protocol');
+      console.error('Verxio initialization error:', error);
     } finally {
-      setIsLoading(false);
+      setIsInitializing(false);
     }
   };
 
-  const getTierColor = (tierName: string) => {
-    switch (tierName.toLowerCase()) {
-      case 'platinum': return 'text-purple-400 border-purple-400/50';
-      case 'gold': return 'text-yellow-400 border-yellow-400/50';
-      case 'silver': return 'text-gray-300 border-gray-300/50';
-      case 'bronze': return 'text-amber-600 border-amber-600/50';
-      case 'grind': return 'text-slate-400 border-slate-400/50';
-      default: return 'text-slate-300 border-slate-300/50';
+  const mintLoyaltyPass = async () => {
+    if (!mintAddress.trim() || !mintName.trim()) {
+      showError('Invalid Input', 'Please enter both wallet address and name');
+      return;
+    }
+
+    setIsMinting(true);
+    try {
+      const pass = await verxioManager.issuePlayerLoyaltyPass(mintAddress.trim(), mintName.trim());
+      if (pass) {
+        showSuccess('Loyalty Pass Minted!', `Successfully minted pass for ${mintName}`);
+        soundManager.playSuccess();
+        setMintAddress('');
+        setMintName('');
+      } else {
+        showError('Minting Failed', 'Failed to mint loyalty pass');
+      }
+    } catch (error) {
+      showError('Minting Error', 'Failed to mint loyalty pass');
+      console.error('Minting error:', error);
+    } finally {
+      setIsMinting(false);
     }
   };
-
-  if (!verxioManager.isReady()) {
-    return (
-      <div className="game-panel p-6">
-        <div className="text-center">
-          <div className="text-4xl mb-4">🔗</div>
-          <h3 className="text-xl font-bold text-white mb-2">Verxio Protocol</h3>
-          <p className="text-slate-300 mb-4">On-chain loyalty and XP management</p>
-          <button
-            onClick={handleCreateLoyaltyProgram}
-            disabled={isLoading}
-            className="solana-button disabled:opacity-50"
-          >
-            {isLoading ? 'Initializing...' : 'Initialize Protocol'}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
-      {/* Loyalty Program Status */}
-      <div className="game-panel p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
-            <h3 className="text-xl font-bold text-white">🎯 Loyalty Program</h3>
+      {/* Header */}
+      <div className="solana-card p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="text-3xl">🔗</div>
+          <div>
+            <h2 className="text-2xl font-bold text-white">Verxio Protocol</h2>
+            <p className="text-gray-300">On-chain loyalty infrastructure for Tactical Crypto Arena</p>
           </div>
-          <button
-            onClick={() => setShowLoyaltyDetails(!showLoyaltyDetails)}
-            className="solana-button secondary text-sm"
-          >
-            {showLoyaltyDetails ? 'Hide Details' : 'Show Details'}
-          </button>
         </div>
 
-        {loyaltyProgram ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-[#9945FF]">{loyaltyProgram.name}</div>
-                <div className="text-slate-300 text-sm">Program Name</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-[#14F195]">{loyaltyProgram.tiers.length}</div>
-                <div className="text-slate-300 text-sm">Tier Levels</div>
-              </div>
-              <div className="text-center">
-                <div className="text-2xl font-bold text-[#14F195]">
-                  {Object.keys(loyaltyProgram.pointsPerAction).length}
-                </div>
-                <div className="text-slate-300 text-sm">Actions</div>
-              </div>
-            </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="text-center p-4 bg-purple-500/20 rounded-lg">
+            <div className="text-2xl mb-2">🌐</div>
+            <div className="text-purple-400 font-bold">Public Access</div>
+            <div className="text-sm text-gray-300">Anyone can mint passes</div>
+          </div>
+          <div className="text-center p-4 bg-green-500/20 rounded-lg">
+            <div className="text-2xl mb-2">⚡</div>
+            <div className="text-green-400 font-bold">Devnet Ready</div>
+            <div className="text-sm text-gray-300">Test on Solana devnet</div>
+          </div>
+          <div className="text-center p-4 bg-cyan-500/20 rounded-lg">
+            <div className="text-2xl mb-2">🎯</div>
+            <div className="text-cyan-400 font-bold">Loyalty Rewards</div>
+            <div className="text-sm text-gray-300">Tier-based progression</div>
+          </div>
+        </div>
+      </div>
 
-            {/* Player Loyalty Pass */}
-            {playerProfile?.loyaltyPass && (
-              <div className="bg-gradient-to-r from-slate-800/50 to-slate-700/50 rounded-xl p-4 border border-slate-600/50">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h4 className="text-lg font-bold text-white mb-1">Your Loyalty Pass</h4>
-                    <p className="text-slate-300 text-sm">{playerProfile.loyaltyPass.name}</p>
-                  </div>
-                  <div className={`px-3 py-1 rounded-full text-sm font-semibold border ${getTierColor(playerProfile.verxioTier || 'Grind')}`}>
-                    {playerProfile.verxioTier || 'Grind'}
-                  </div>
-                </div>
-              </div>
-            )}
+      {/* Protocol Status */}
+      <div className="solana-card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">Protocol Status</h3>
 
-            {/* Tiers and Actions */}
-            {showLoyaltyDetails && (
-              <div className="space-y-4">
-                {/* Tiers */}
-                <div>
-                  <h4 className="text-lg font-bold text-white mb-3">🎖️ Loyalty Tiers</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {loyaltyProgram.tiers.map((tier, index) => (
-                      <div
-                        key={tier.name}
-                        className={`game-card p-3 border-2 ${getTierColor(tier.name)}`}
-                      >
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-white mb-1">{tier.name}</div>
-                          <div className="text-slate-300 text-sm mb-2">{tier.xpRequired} XP Required</div>
-                          <div className="text-xs text-slate-400">
-                            {tier.rewards.join(', ')}
-                          </div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Actions */}
-                <div>
-                  <h4 className="text-lg font-bold text-white mb-3">⚡ XP Actions</h4>
-                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {Object.entries(loyaltyProgram.pointsPerAction).map(([action, points]) => (
-                      <div key={action} className="game-card p-3">
-                        <div className="text-center">
-                          <div className="text-lg font-bold text-[#14F195] mb-1">
-                            {action.replace('_', ' ').toUpperCase()}
-                          </div>
-                          <div className="text-slate-300 text-sm">{points} XP</div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
+        {!loyaltyProgram ? (
+          <div className="text-center py-8">
+            <div className="text-4xl mb-4">🚀</div>
+            <p className="text-gray-300 mb-4">Verxio Protocol not initialized yet</p>
+            <button
+              onClick={initializeProtocol}
+              disabled={isInitializing}
+              className="solana-button"
+            >
+              {isInitializing ? 'Initializing...' : 'Initialize Protocol'}
+            </button>
           </div>
         ) : (
-          <div className="text-center py-8">
-            <div className="text-4xl mb-4">🎯</div>
-            <p className="text-slate-200 mb-4">No loyalty program created yet</p>
-            <button
-              onClick={handleCreateLoyaltyProgram}
-              disabled={isLoading}
-              className="solana-button disabled:opacity-50"
-            >
-              {isLoading ? 'Creating...' : 'Create Loyalty Program'}
-            </button>
+          <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-lg font-bold text-green-400 mb-3">Loyalty Program</h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Name:</span>
+                    <span className="text-white font-bold">{loyaltyProgram.name}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Collection:</span>
+                    <span className="text-white font-mono text-sm">{loyaltyProgram.collectionAddress.slice(0, 8)}...</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-gray-300">Authority:</span>
+                    <span className="text-white font-mono text-sm">{loyaltyProgram.updateAuthority.slice(0, 8)}...</span>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-bold text-purple-400 mb-3">Tier System</h4>
+                <div className="space-y-2">
+                  {loyaltyProgram.tiers.map((tier: any, index: number) => (
+                    <div key={index} className="flex justify-between items-center">
+                      <span className={`text-sm ${tier.name === 'Grind' ? 'text-gray-300' :
+                        tier.name === 'Bronze' ? 'text-amber-600' :
+                          tier.name === 'Silver' ? 'text-gray-400' :
+                            tier.name === 'Gold' ? 'text-yellow-400' :
+                              'text-cyan-400'
+                        }`}>
+                        {tier.name}
+                      </span>
+                      <span className="text-white text-sm">{tier.xpRequired} XP</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         )}
       </div>
 
-      {/* On-Chain Benefits */}
-      <div className="game-panel p-6">
-        <h3 className="text-xl font-bold text-white mb-4">🚀 On-Chain Benefits</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="text-center p-4 bg-gradient-to-br from-slate-800/30 to-slate-700/30 rounded-xl border border-slate-600/50">
-            <div className="text-3xl mb-2">💎</div>
-            <h4 className="text-lg font-bold text-white mb-2">Loyalty Pass NFT</h4>
-            <p className="text-slate-300 text-sm">Your progress stored on Solana blockchain</p>
+      {/* Public Minting */}
+      <div className="solana-card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">🎫 Public Loyalty Pass Minting</h3>
+        <p className="text-gray-300 mb-6">
+          Anyone can mint a loyalty pass on devnet! Enter a wallet address and name to create a new pass.
+        </p>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Wallet Address
+            </label>
+            <input
+              type="text"
+              value={mintAddress}
+              onChange={(e) => setMintAddress(e.target.value)}
+              placeholder="Enter Solana wallet address"
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            />
           </div>
-          <div className="text-center p-4 bg-gradient-to-br from-slate-800/30 to-slate-700/30 rounded-xl border border-slate-600/50">
-            <div className="text-3xl mb-2">🎖️</div>
-            <h4 className="text-lg font-bold text-white mb-2">Tier Progression</h4>
-            <p className="text-slate-300 text-sm">Automatic tier upgrades based on XP</p>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-2">
+              Pass Name
+            </label>
+            <input
+              type="text"
+              value={mintName}
+              onChange={(e) => setMintName(e.target.value)}
+              placeholder="Enter pass name"
+              className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
+            />
           </div>
-          <div className="text-center p-4 bg-gradient-to-br from-slate-800/30 to-slate-700/30 rounded-xl border border-slate-600/50">
-            <div className="text-3xl mb-2">🎁</div>
-            <h4 className="text-lg font-bold text-white mb-2">Rewards System</h4>
-            <p className="text-slate-300 text-sm">Unlock rewards at each tier level</p>
+        </div>
+
+        <button
+          onClick={mintLoyaltyPass}
+          disabled={!mintAddress.trim() || !mintName.trim() || isMinting || !loyaltyProgram}
+          className="solana-button w-full md:w-auto"
+        >
+          {isMinting ? 'Minting...' : '🚀 Mint Loyalty Pass'}
+        </button>
+
+        {!loyaltyProgram && (
+          <p className="text-yellow-400 text-sm mt-2">
+            ⚠️ Protocol must be initialized before minting
+          </p>
+        )}
+      </div>
+
+      {/* Player's Loyalty Pass */}
+      {playerProfile?.loyaltyPass && (
+        <div className="solana-card p-6">
+          <h3 className="text-xl font-bold text-white mb-4">🎫 Your Loyalty Pass</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-300">Pass Name:</span>
+                <span className="text-white font-bold">{playerProfile.loyaltyPass.name}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-300">Current Tier:</span>
+                <span className="text-purple-400 font-bold">{playerProfile.verxioTier || 'Grind'}</span>
+              </div>
+              <div className="flex justify-between mb-2">
+                <span className="text-gray-300">Pass ID:</span>
+                <span className="text-white font-mono text-sm">{playerProfile.loyaltyPass.publicKey.slice(0, 8)}...</span>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-bold text-green-400 mb-3">On-Chain Benefits</h4>
+              <ul className="space-y-2 text-sm text-gray-300">
+                <li>✅ Loyalty Pass NFT</li>
+                <li>✅ Tier Progression</li>
+                <li>✅ Rewards System</li>
+                <li>✅ Cross-Game Potential</li>
+              </ul>
+            </div>
           </div>
-          <div className="text-center p-4 bg-gradient-to-br from-slate-800/30 to-slate-700/30 rounded-xl border border-slate-600/50">
-            <div className="text-3xl mb-2">🔗</div>
-            <h4 className="text-lg font-bold text-white mb-2">Cross-Game</h4>
-            <p className="text-slate-300 text-sm">Use your loyalty pass in other games</p>
+        </div>
+      )}
+
+      {/* Points System */}
+      <div className="solana-card p-6">
+        <h3 className="text-xl font-bold text-white mb-4">⚡ Points System</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          <div className="p-4 bg-green-500/20 rounded-lg">
+            <div className="text-green-400 font-bold mb-2">Battle Actions</div>
+            <div className="text-sm text-gray-300">
+              <div>Win: +100 points</div>
+              <div>Loss: +20 points</div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-purple-500/20 rounded-lg">
+            <div className="text-purple-400 font-bold mb-2">Hero Actions</div>
+            <div className="text-sm text-gray-300">
+              <div>Summon: +25 points</div>
+              <div>Customize: +10 points</div>
+            </div>
+          </div>
+
+          <div className="p-4 bg-cyan-500/20 rounded-lg">
+            <div className="text-cyan-400 font-bold mb-2">Quest Actions</div>
+            <div className="text-sm text-gray-300">
+              <div>Complete: +50 points</div>
+              <div>Daily: +25 points</div>
+            </div>
           </div>
         </div>
       </div>
