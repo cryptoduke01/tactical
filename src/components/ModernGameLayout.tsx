@@ -237,49 +237,47 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
       <div className="flex-1 flex flex-col main-content">
         {/* Top Bar */}
         <div className="bg-gradient-to-r from-slate-900/30 to-slate-800/20 backdrop-blur-xl border-b border-slate-700/30 p-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
             {/* Greeting */}
             <div className="text-white">
-              <h1 className="text-xl font-semibold">
+              <h1 className="text-lg md:text-xl font-semibold">
                 {greeting.greeting}, {playerProfile?.name || 'Commander'}
               </h1>
               <p className="text-[#14F195] text-sm">Ready for tactical deployment?</p>
             </div>
 
-            {/* Solana Devnet Status and XP Balance */}
-            <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="flex items-center gap-6 w-full">
-                {/* Solana Devnet Status */}
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
-                  <span className="text-[#14F195] text-sm font-medium">DEVNET</span>
-                </div>
+            {/* Solana Devnet Status and XP Balance - Mobile Optimized */}
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full md:w-auto">
+              {/* Solana Devnet Status */}
+              <div className="flex items-center gap-2">
+                <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
+                <span className="text-[#14F195] text-sm font-medium">DEVNET</span>
+              </div>
 
-                {/* XP Balance */}
-                <div className="flex items-center gap-2">
-                  <span className="text-slate-300 text-sm">XP:</span>
-                  <span className="text-[#9945FF] font-bold text-lg">
-                    {playerProfile?.xp?.toLocaleString() || '10,000'}
-                  </span>
-                </div>
+              {/* XP Balance */}
+              <div className="flex items-center gap-2">
+                <span className="text-slate-300 text-sm">XP:</span>
+                <span className="text-[#9945FF] font-bold text-base md:text-lg">
+                  {playerProfile?.xp?.toLocaleString() || '10,000'}
+                </span>
+              </div>
 
-                {/* SOL Balance */}
-                <div className="flex items-center gap-2">
-                  <div className="text-sm text-gray-300">SOL Balance</div>
-                  <div className="text-lg font-bold text-green-400">{solBalance} SOL</div>
-                </div>
+              {/* SOL Balance */}
+              <div className="flex items-center gap-2">
+                <div className="text-sm text-gray-300">SOL:</div>
+                <div className="text-base md:text-lg font-bold text-green-400">{solBalance}</div>
               </div>
             </div>
 
-            {/* User Actions */}
-            <div className="flex items-center space-x-4">
+            {/* User Actions - Mobile Optimized */}
+            <div className="flex items-center space-x-2 md:space-x-4 w-full md:w-auto justify-between md:justify-end">
               {/* Sound Control */}
               <button
                 onClick={toggleMute}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 hover:scale-110"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 hover:scale-110"
                 title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
               >
-                <span className="text-lg">
+                <span className="text-sm md:text-lg">
                   {isMuted ? '🔇' : '🔊'}
                 </span>
               </button>
@@ -287,13 +285,13 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
               {/* Background Music Toggle */}
               <button
                 onClick={() => soundManager.toggleBackgroundMusic()}
-                className="w-10 h-10 rounded-full bg-gradient-to-br from-[#14F195]/50 to-[#10C07A]/30 border border-[#14F195]/40 flex items-center justify-center text-white hover:from-[#14F195]/50 hover:to-[#10C07A]/30 hover:border-[#14F195]/50 transition-all duration-300 hover:scale-110"
+                className="w-8 h-8 md:w-10 md:h-10 rounded-full bg-gradient-to-br from-[#14F195]/50 to-[#10C07A]/30 border border-[#14F195]/40 flex items-center justify-center text-white hover:from-[#14F195]/50 hover:to-[#10C07A]/30 hover:border-[#14F195]/50 transition-all duration-300 hover:scale-110"
                 title="Toggle Background Music"
               >
-                <span className="text-lg">🎵</span>
+                <span className="text-sm md:text-lg">🎵</span>
               </button>
 
-              {/* Volume Slider */}
+              {/* Volume Slider - Hidden on mobile */}
               <div className="hidden md:block">
                 <input
                   type="range"
@@ -309,70 +307,78 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
                 />
               </div>
 
-              <div className="nav-icon" data-tooltip="Shop">
+              {/* Shop and Notifications - Hidden on mobile */}
+              <div className="hidden md:block nav-icon" data-tooltip="Shop">
                 <span className="text-lg">🛒</span>
               </div>
-              <div className="nav-icon" data-tooltip="Notifications">
+              <div className="hidden md:block nav-icon" data-tooltip="Notifications">
                 <span className="text-lg">🔔</span>
               </div>
-              <WalletMultiButton className="!bg-gradient-to-r !from-[#9945FF] !to-[#7c3aed] hover:!from-[#8b3cf6] hover:!to-[#6d28d9] !text-white !font-semibold !px-4 !py-2 !rounded-xl !border !border-[#9945FF]/50" />
+
+              {/* Wallet Button - Mobile Optimized */}
+              <WalletMultiButton className="!bg-gradient-to-r !from-[#9945FF] !to-[#7c3aed] hover:!from-[#8b3cf6] hover:!to-[#6d28d9] !text-white !font-semibold !px-3 md:!px-4 !py-2 !rounded-xl !border !border-[#9945FF]/50 !text-sm md:!text-base" />
             </div>
           </div>
         </div>
 
         {/* Content Area */}
         <div className="flex-1 content-wrapper overflow-auto custom-scrollbar">
-          {activeTab === 'heroes' && (
-            <HeroCollection
-              heroes={heroes}
-              onHeroUpdate={handleHeroUpdate}
-              heroManager={heroManager}
-              playerProfile={playerProfile}
-            />
-          )}
+          <div className="pb-20 md:pb-8"> {/* Add bottom padding for mobile nav */}
+            {activeTab === 'heroes' && (
+              <HeroCollection
+                heroes={heroes}
+                onHeroUpdate={handleHeroUpdate}
+                heroManager={heroManager}
+                playerProfile={playerProfile}
+              />
+            )}
 
-          {activeTab === 'battle' && (
-            <BattleArena
-              heroes={heroes}
-              playerProfile={playerProfile}
-              onBattleComplete={handleBattleComplete}
-            />
-          )}
+            {activeTab === 'battle' && (
+              <BattleArena
+                heroes={heroes}
+                playerProfile={playerProfile}
+                onBattleComplete={handleBattleComplete}
+              />
+            )}
 
-          {activeTab === 'quests' && (
-            <DeFiQuests
-              playerProfile={playerProfile}
-              onQuestComplete={handleQuestComplete}
-            />
-          )}
+            {activeTab === 'quests' && (
+              <DeFiQuests
+                playerProfile={playerProfile}
+                onQuestComplete={handleQuestComplete}
+              />
+            )}
 
-          {activeTab === 'stats' && (
-            <PlayerStats
-              profile={playerProfile}
-              heroes={heroes}
-            />
-          )}
+            {activeTab === 'stats' && (
+              <PlayerStats
+                profile={playerProfile}
+                heroes={heroes}
+              />
+            )}
 
-          {activeTab === 'verxio' && (
-            <VerxioIntegration
-              playerProfile={playerProfile}
-            />
-          )}
+            {activeTab === 'verxio' && (
+              <VerxioIntegration
+                playerProfile={playerProfile}
+              />
+            )}
+          </div>
         </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
       <div className="mobile-nav md:hidden">
-        <div className="flex justify-around items-center py-3">
+        <div className="flex justify-around items-center py-4 px-2">
           {(['heroes', 'battle', 'quests', 'stats', 'verxio'] as const).map((tab) => (
-            <div
+            <button
               key={tab}
-              className={`flex flex-col items-center space-y-1 ${activeTab === tab ? 'text-[#14F195]' : 'text-slate-300'}`}
+              className={`flex flex-col items-center space-y-2 p-2 rounded-xl transition-all duration-300 ${activeTab === tab
+                ? 'text-[#14F195] bg-[#14F195]/10 border border-[#14F195]/30'
+                : 'text-slate-300 hover:text-slate-200 hover:bg-slate-700/30'
+                }`}
               onClick={() => handleTabChange(tab)}
             >
-              <span className="text-xl">{getTabIcon(tab)}</span>
+              <span className="text-xl md:text-2xl">{getTabIcon(tab)}</span>
               <span className="text-xs font-medium">{getTabLabel(tab)}</span>
-            </div>
+            </button>
           ))}
         </div>
       </div>

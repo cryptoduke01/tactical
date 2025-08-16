@@ -66,10 +66,10 @@ class ToastManager {
       this.showToast("warning", "Warning", args.join(" "));
     };
 
-    // Capture console.error - always show errors
+    // Capture console.error - don't show as UI toasts, keep in console only
     console.error = (...args) => {
       this.originalConsole.error.apply(console, args);
-      this.showToast("error", "Error", args.join(" "));
+      // Don't show console.error as UI toasts - keep them in console only
     };
 
     // Capture console.success (custom)

@@ -124,12 +124,17 @@ class VerxioManager {
     playerAddress: string,
     playerName: string
   ): Promise<VerxioLoyaltyPass | null> {
-    if (!this.isInitialized || !this.loyaltyProgram) {
-      console.error("Verxio not initialized or loyalty program not created");
+    if (!this.isInitialized) {
+      console.error("Verxio not initialized");
       return null;
     }
 
     try {
+      // Ensure loyalty program exists
+      if (!this.loyaltyProgram) {
+        await this.createGameLoyaltyProgram();
+      }
+
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
         // Request wallet signature for minting
