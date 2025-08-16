@@ -67,172 +67,168 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(20, 241, 149, 0.4);
   }
+}
 
-  .game-panel {
-    @apply bg-gradient-to-br from-slate-900/20 to-slate-800/10 backdrop-blur-xl border border-slate-700/30 rounded-2xl shadow-2xl;
-  }
+.game-card {
+  @apply bg-gradient-to-br from-slate-800/30 to-slate-700/20 backdrop-blur-lg border border-slate-600/40 rounded-xl shadow-xl transition-all duration-300;
+}
 
-  .game-card {
-    @apply bg-gradient-to-br from-slate-800/30 to-slate-700/20 backdrop-blur-lg border border-slate-600/40 rounded-xl shadow-xl transition-all duration-300;
-  }
+.game-card:hover {
+  @apply transform scale-105 border-slate-500/60 shadow-slate-500/20;
+}
 
-  .game-card:hover {
-    @apply transform scale-105 border-slate-500/60 shadow-slate-500/20;
-  }
+.game-panel {
+  @apply bg-gradient-to-br from-slate-900/20 to-slate-800/10 backdrop-blur-xl border border-slate-700/30 rounded-2xl shadow-2xl mb-8;
+}
 
-  .desktop-sidebar {
-    @apply hidden md:flex;
-  }
+.game-panel:last-child {
+  @apply mb-0;
+}
 
-  .sidebar-nav {
-    @apply bg-gradient-to-b from-slate-900/40 to-slate-800/20 backdrop-blur-xl border-r border-slate-700/30;
-  }
+.desktop-sidebar {
+  @apply hidden md:flex;
+}
 
-  .nav-icon {
-    @apply w-12 h-12 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 cursor-pointer relative;
-  }
+.sidebar-nav {
+  @apply bg-gradient-to-b from-slate-900/40 to-slate-800/20 backdrop-blur-xl border-r border-slate-700/30;
+}
 
-  .nav-icon.active {
-    @apply bg-gradient-to-br from-slate-500/60 to-slate-400/40 border-slate-400/50 shadow-lg shadow-slate-500/25;
-  }
+.nav-icon {
+  @apply w-12 h-12 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 cursor-pointer relative;
+}
 
-  .hero-card {
-    @apply bg-gradient-to-br from-slate-800/40 to-slate-700/30 backdrop-blur-lg border border-slate-600/50 rounded-2xl p-6 hover:border-slate-500/70 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300;
-  }
+.nav-icon.active {
+  @apply bg-gradient-to-br from-slate-500/60 to-slate-400/40 border-slate-400/50 shadow-lg shadow-slate-500/25;
+}
 
-  .hero-card.legendary {
-    @apply border-[#9945FF]/50 hover:border-[#9945FF]/70 hover:shadow-[#9945FF]/20;
-  }
+.hero-card {
+  @apply bg-gradient-to-br from-slate-800/40 to-slate-700/30 backdrop-blur-lg border border-slate-600/50 rounded-2xl p-6 hover:border-slate-500/70 hover:shadow-xl hover:shadow-slate-500/20 transition-all duration-300;
+}
 
-  .hero-card.epic {
-    @apply border-[#14F195]/50 hover:border-[#14F195]/70 hover:shadow-[#14F195]/20;
-  }
+.hero-card.legendary {
+  @apply border-[#9945FF]/50 hover:border-[#9945FF]/70 hover:shadow-[#9945FF]/20;
+}
 
-  .hero-card.rare {
-    @apply border-blue-500/50 hover:border-blue-400/70 hover:shadow-blue-500/20;
-  }
+.hero-card.epic {
+  @apply border-[#14F195]/50 hover:border-[#14F195]/70 hover:shadow-[#14F195]/20;
+}
 
-  .hero-card.common {
-    @apply border-green-500/50 hover:border-green-400/70 hover:shadow-green-500/20;
-  }
+.hero-card.rare {
+  @apply border-blue-500/50 hover:border-blue-400/70 hover:shadow-blue-500/20;
+}
 
-  .battle-panel {
-    @apply bg-gradient-to-br from-slate-900/30 to-slate-800/20 backdrop-blur-xl border border-slate-600/40 rounded-2xl shadow-2xl;
-  }
+.hero-card.common {
+  @apply border-green-500/50 hover:border-green-400/70 hover:shadow-green-500/20;
+}
 
-  .battle-health-bar {
-    @apply bg-slate-700 rounded-full h-3 overflow-hidden;
-  }
+.battle-panel {
+  @apply bg-gradient-to-br from-slate-900/30 to-slate-800/20 backdrop-blur-xl border border-slate-600/40 rounded-2xl shadow-2xl;
+}
 
-  .battle-health-fill {
-    @apply h-3 rounded-full transition-all duration-500;
-  }
+.battle-health-bar {
+  @apply bg-slate-700 rounded-full h-3 overflow-hidden;
+}
 
-  .battle-health-fill.player {
-    @apply bg-gradient-to-r from-[#14F195] to-[#10b981];
-  }
+.battle-health-fill {
+  @apply h-3 rounded-full transition-all duration-500;
+}
 
-  .battle-health-fill.opponent {
-    @apply bg-gradient-to-r from-[#9945FF] to-[#7c3aed];
-  }
+.battle-health-fill.player {
+  @apply bg-gradient-to-r from-[#14F195] to-[#10b981];
+}
 
-  .quest-card {
-    @apply bg-gradient-to-br from-slate-800/40 to-slate-700/30 backdrop-blur-lg border border-slate-600/50 rounded-xl p-6 hover:border-slate-500/70 transition-all duration-300;
-  }
+.battle-health-fill.opponent {
+  @apply bg-gradient-to-r from-[#9945FF] to-[#7c3aed];
+}
 
-  .quest-card.coming-soon {
-    @apply opacity-60 border-amber-600/40;
-  }
+.quest-card {
+  @apply bg-gradient-to-br from-slate-800/40 to-slate-700/30 backdrop-blur-lg border border-slate-600/50 rounded-xl p-6 hover:border-slate-500/70 transition-all duration-300;
+}
 
-  .mobile-nav {
-    @apply fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-slate-800/70 backdrop-blur-xl border-t border-slate-700/40 z-50 md:hidden;
-  }
+.quest-card.coming-soon {
+  @apply opacity-60 border-amber-600/40;
+}
 
+.mobile-nav {
+  @apply fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-slate-800/70 backdrop-blur-xl border-t border-slate-700/40 z-50 md:hidden;
+}
+
+.content-wrapper {
+  @apply px-6 md:px-8 lg:px-12 pt-8;
+}
+
+.main-content {
+  @apply w-full max-w-none px-0;
+}
+
+.toast-container {
+  @apply fixed top-4 right-4 z-50 space-y-2 max-w-sm;
+}
+
+.toast {
+  @apply bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-slate-600/50 rounded-xl p-4 shadow-2xl shadow-slate-500/20 text-white font-medium min-w-80 transform transition-all duration-300;
+}
+
+.toast.success {
+  @apply from-[#14F195]/90 to-[#10b981]/90 border-[#14F195]/50 shadow-[#14F195]/20;
+}
+
+.toast.error {
+  @apply from-red-800/90 to-red-700/90 border-red-600/50 shadow-red-500/20;
+}
+
+.toast.warning {
+  @apply from-amber-800/90 to-amber-700/90 border-amber-600/50 shadow-amber-500/20;
+}
+
+.toast.info {
+  @apply from-[#9945FF]/90 to-[#7c3aed]/90 border-[#9945FF]/50 shadow-[#9945FF]/20;
+}
+
+.loading-spinner {
+  @apply w-6 h-6 border-2 border-[#9945FF]/30 border-t-[#9945FF] rounded-full animate-spin;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: rgba(30, 41, 59, 0.5);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(135deg, #9945ff, #7c3aed);
+  border-radius: 4px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(135deg, #8b3cf6, #6d28d9);
+}
+
+@media (max-width: 768px) {
   .content-wrapper {
-    @apply px-6 md:px-8 lg:px-12 pt-8;
-  }
-
-  .main-content {
-    @apply w-full max-w-none px-0;
-  }
-
-  .game-panel {
-    @apply mb-8;
-  }
-
-  .game-panel:last-child {
-    @apply mb-0;
+    @apply px-4 pt-4;
   }
 
   .toast-container {
-    @apply fixed top-4 right-4 z-50 space-y-2 max-w-sm;
+    @apply top-4 left-4 right-4;
   }
 
   .toast {
-    @apply bg-gradient-to-r from-slate-800/90 to-slate-700/90 backdrop-blur-xl border border-slate-600/50 rounded-xl p-4 shadow-2xl shadow-slate-500/20 text-white font-medium min-w-80 transform transition-all duration-300;
+    @apply min-w-0 w-full;
   }
 
-  .toast.success {
-    @apply from-[#14F195]/90 to-[#10b981]/90 border-[#14F195]/50 shadow-[#14F195]/20;
+  .solana-button {
+    @apply text-sm px-4 py-2;
   }
 
-  .toast.error {
-    @apply from-red-800/90 to-red-700/90 border-red-600/50 shadow-red-500/20;
+  .game-panel {
+    @apply mb-6;
   }
 
-  .toast.warning {
-    @apply from-amber-800/90 to-amber-700/90 border-amber-600/50 shadow-amber-500/20;
-  }
-
-  .toast.info {
-    @apply from-[#9945FF]/90 to-[#7c3aed]/90 border-[#9945FF]/50 shadow-[#9945FF]/20;
-  }
-
-  .loading-spinner {
-    @apply w-6 h-6 border-2 border-[#9945FF]/30 border-t-[#9945FF] rounded-full animate-spin;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar {
-    width: 8px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-track {
-    background: rgba(30, 41, 59, 0.5);
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb {
-    background: linear-gradient(135deg, #9945ff, #7c3aed);
-    border-radius: 4px;
-  }
-
-  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-    background: linear-gradient(135deg, #8b3cf6, #6d28d9);
-  }
-
-  @media (max-width: 768px) {
-    .content-wrapper {
-      @apply px-4 pt-4;
-    }
-
-    .toast-container {
-      @apply top-4 left-4 right-4;
-    }
-
-    .toast {
-      @apply min-w-0 w-full;
-    }
-
-    .solana-button {
-      @apply text-sm px-4 py-2;
-    }
-
-    .game-panel {
-      @apply mb-6;
-    }
-
-    .hero-card {
-      @apply p-4;
-    }
+  .hero-card {
+    @apply p-4;
   }
 }
