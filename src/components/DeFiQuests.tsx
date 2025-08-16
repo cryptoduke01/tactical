@@ -167,6 +167,7 @@ export function DeFiQuests({ playerProfile, onQuestComplete }: DeFiQuestsProps) 
       if (quest.progress < quest.target) {
         // Simulate some progress (in real game, this would be actual DeFi actions)
         const newProgress = Math.min(quest.progress + 1, quest.target);
+        quest.progress = newProgress;
 
         // Update quest progress
         const updatedQuests = quests.map(q =>
@@ -188,7 +189,6 @@ export function DeFiQuests({ playerProfile, onQuestComplete }: DeFiQuestsProps) 
           });
         } else {
           // Show progress update
-          console.log(`Quest progress: ${newProgress}/${quest.target}`);
         }
 
         // Don't close modal if quest isn't complete

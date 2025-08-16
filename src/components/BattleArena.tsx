@@ -120,7 +120,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
     // Start automated battle
     startAutomatedBattle();
 
-    soundManager.playBattleSound();
+    soundManager.playBattle();
   };
 
   const startAutomatedBattle = () => {
@@ -188,7 +188,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       setTimeout(() => setOpponent(prev => prev ? { ...prev, isAttacking: false } : null), 500);
     }
 
-    soundManager.playBattleSound();
+    soundManager.playBattle();
   };
 
   const performDefend = (defender: 'player' | 'opponent') => {
@@ -267,40 +267,6 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       cancelAnimationFrame(animationFrameRef.current);
     }
   };
-
-  // Animation loop
-  useEffect(() => {
-    if (battleState === 'battling' && playerCharacter && opponent) {
-      const animate = () => {
-        if (playerCharacter && opponent) {
-          // Move characters slightly for animation
-          setPlayerCharacter(prev => prev ? {
-            ...prev,
-            position: {
-              x: prev.position.x + (Math.random() - 0.5) * 2,
-              y: prev.position.y + (Math.random() - 0.5) * 2
-            }
-          } : null);
-
-          setOpponent(prev => prev ? {
-            ...prev,
-            position: {
-              x: prev.position.x + (Math.random() - 0.5) * 2,
-              y: prev.position.y + (Math.random() - 0.5) * 2
-            }
-          } : null);
-        }
-        animationFrameRef.current = requestAnimationFrame(animate);
-      };
-      animate();
-    }
-
-    return () => {
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-    };
-  }, [battleState, playerCharacter, opponent]);
 
   // Render battle scene
   useEffect(() => {
@@ -426,6 +392,40 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
 
   }, [battleState, playerCharacter, opponent]);
 
+  // Animation loop for character movement
+  useEffect(() => {
+    if (battleState === 'battling' && playerCharacter && opponent) {
+      const animate = () => {
+        if (playerCharacter && opponent) {
+          // Move characters slightly for animation
+          setPlayerCharacter(prev => prev ? {
+            ...prev,
+            position: {
+              x: Math.max(50, Math.min(150, prev.position.x + (Math.random() - 0.5) * 4)),
+              y: Math.max(150, Math.min(250, prev.position.y + (Math.random() - 0.5) * 4))
+            }
+          } : null);
+
+          setOpponent(prev => prev ? {
+            ...prev,
+            position: {
+              x: Math.max(450, Math.min(550, prev.position.x + (Math.random() - 0.5) * 4)),
+              y: Math.max(150, Math.min(250, prev.position.y + (Math.random() - 0.5) * 4))
+            }
+          } : null);
+        }
+        animationFrameRef.current = requestAnimationFrame(animate);
+      };
+      animate();
+    }
+
+    return () => {
+      if (animationFrameRef.current) {
+        cancelAnimationFrame(animationFrameRef.current);
+      }
+    };
+  }, [battleState, playerCharacter, opponent]);
+
   if (battleState === 'hero-selection') {
     return (
       <div className="fixed inset-0 bg-black/80 flex items-center justify-center z-50">
@@ -440,7 +440,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
               >
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-green-500 rounded-lg flex items-center justify-center text-2xl">
-                    {hero.emoji}
+                    ⚔️
                   </div>
                   <div>
                     <div className="font-bold text-white">{hero.name}</div>

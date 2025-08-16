@@ -59,7 +59,6 @@ export class HeroManager {
     try {
       // For now, use a placeholder project address
       // In production, this would be created via Honeycomb dashboard
-      console.log("Using placeholder project for development");
       this.projectAddress = "dev_project_placeholder";
     } catch (error) {
       console.error("Failed to initialize project:", error);
@@ -71,11 +70,9 @@ export class HeroManager {
   async createPlayerProfile(walletAddress: string): Promise<PlayerProfile> {
     try {
       // Try to create user in Honeycomb (stubbed for now)
-      console.log("Creating user profile for wallet:", walletAddress);
 
       // Initialize Verxio Protocol if not ready
       if (!verxioManager.isReady()) {
-        console.log("Verxio not ready, creating loyalty program...");
         await verxioManager.createGameLoyaltyProgram();
       }
 
@@ -95,7 +92,7 @@ export class HeroManager {
             );
           }
         } catch (error) {
-          console.log("Failed to create Verxio loyalty pass:", error);
+          // Silent fail for Verxio
         }
       }
 
@@ -179,7 +176,6 @@ export class HeroManager {
   async savePlayerProfile(profile: PlayerProfile): Promise<void> {
     try {
       storageManager.savePlayerProfile(profile);
-      console.log("Profile saved to storage");
     } catch (error) {
       console.error("Failed to save profile:", error);
     }
@@ -207,10 +203,9 @@ export class HeroManager {
             if (result?.success) {
               profile.verxioTier = result.newTier;
               storageManager.savePlayerProfile(profile);
-              console.log(`XP updated on-chain. New tier: ${result.newTier}`);
             }
           } catch (error) {
-            console.log("Failed to update XP on-chain:", error);
+            // Silent fail for Verxio
           }
         }
       }
@@ -225,12 +220,10 @@ export class HeroManager {
       // Try to load from storage first
       const storedProfile = storageManager.loadPlayerProfile(walletAddress);
       if (storedProfile) {
-        console.log("Profile loaded from storage:", storedProfile.name);
         return storedProfile;
       }
 
       // If no stored profile, create a new one
-      console.log("No stored profile found, creating new one");
       return await this.createPlayerProfile(walletAddress);
     } catch (error) {
       console.error("Failed to get player profile:", error);
@@ -244,12 +237,10 @@ export class HeroManager {
       // Try to load from storage first
       const storedHeroes = storageManager.loadHeroes(walletAddress);
       if (storedHeroes.length > 0) {
-        console.log("Heroes loaded from storage:", storedHeroes.length);
         return storedHeroes;
       }
 
       // If no stored heroes, return empty array
-      console.log("No stored heroes found");
       return [];
     } catch (error) {
       console.error("Failed to get player heroes:", error);
@@ -261,7 +252,6 @@ export class HeroManager {
   async savePlayerHeroes(walletAddress: string, heroes: Hero[]): Promise<void> {
     try {
       storageManager.saveHeroes(walletAddress, heroes);
-      console.log("Heroes saved to storage");
     } catch (error) {
       console.error("Failed to save heroes:", error);
     }
@@ -463,8 +453,6 @@ export class HeroManager {
     heroData: Partial<Hero>
   ): Promise<Hero> {
     try {
-      console.log("Creating hero for wallet:", walletAddress);
-
       const newHero: Hero = {
         id: `hero_${Date.now()}`,
         name: heroData.name || "New Hero",
@@ -503,8 +491,6 @@ export class HeroManager {
     traitUpdates: Partial<HeroTrait>[]
   ): Promise<Hero> {
     try {
-      console.log(`Updating hero ${heroId} traits:`, traitUpdates);
-
       // Get current heroes
       const currentHeroes = await this.getPlayerHeroes(walletAddress);
       const heroIndex = currentHeroes.findIndex((h) => h.id === heroId);
@@ -544,10 +530,6 @@ export class HeroManager {
     xpGained: number
   ): Promise<{ success: boolean; xpGained: number }> {
     try {
-      console.log(
-        `Quest ${questId} completed by ${walletAddress}, XP gained: ${xpGained}`
-      );
-
       // Load current profile
       const profile = await this.getPlayerProfile(walletAddress);
       if (!profile) {
@@ -592,8 +574,6 @@ export class HeroManager {
     updates: Partial<PlayerProfile>
   ): Promise<PlayerProfile> {
     try {
-      console.log(`Updating player ${walletAddress} stats:`, updates);
-
       // Load current profile
       const profile = await this.getPlayerProfile(walletAddress);
       if (!profile) {

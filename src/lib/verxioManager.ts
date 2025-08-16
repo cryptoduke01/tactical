@@ -66,9 +66,6 @@ class VerxioManager {
     try {
       // Check if we're in a browser environment
       if (typeof window !== "undefined") {
-        console.log(
-          "Running in browser environment - Verxio Protocol will use fallback mode"
-        );
         this.isInitialized = true;
         return;
       }
@@ -83,7 +80,6 @@ class VerxioManager {
       this.context = initializeVerxio(this.umi, this.programAuthority);
 
       // Set signer (will be set when wallet connects)
-      console.log("Verxio Protocol initialized on devnet");
       this.isInitialized = true;
     } catch (error) {
       console.error("Failed to initialize Verxio Protocol:", error);
@@ -96,7 +92,6 @@ class VerxioManager {
   public setSigner(signer: any) {
     if (this.umi && this.isInitialized) {
       this.umi.use(keypairIdentity(signer));
-      console.log("Verxio signer set");
     }
   }
 
@@ -108,12 +103,8 @@ class VerxioManager {
     }
 
     try {
-      console.log("Creating game loyalty program...");
-
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
-        console.log("Using browser fallback mode for loyalty program");
-
         this.loyaltyProgram = {
           collectionAddress: "browser_fallback_collection",
           updateAuthority: "browser_fallback_authority",
@@ -150,10 +141,6 @@ class VerxioManager {
           },
         };
 
-        console.log(
-          "Loyalty program created (browser fallback):",
-          this.loyaltyProgram
-        );
         return this.loyaltyProgram;
       }
 
@@ -239,7 +226,6 @@ class VerxioManager {
         },
       };
 
-      console.log("Loyalty program created:", this.loyaltyProgram);
       return this.loyaltyProgram;
     } catch (error) {
       console.error("Failed to create loyalty program:", error);
@@ -258,12 +244,8 @@ class VerxioManager {
     }
 
     try {
-      console.log(`Issuing loyalty pass to ${playerName}...`);
-
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
-        console.log("Using browser fallback mode for loyalty pass");
-
         const loyaltyPass: VerxioLoyaltyPass = {
           publicKey: `browser_pass_${Date.now()}`,
           name: `${playerName}'s Arena Pass`,
@@ -274,7 +256,6 @@ class VerxioManager {
           rewards: ["Basic access"],
         };
 
-        console.log("Loyalty pass issued (browser fallback):", loyaltyPass);
         return loyaltyPass;
       }
 
@@ -301,7 +282,6 @@ class VerxioManager {
         rewards: ["Basic access"],
       };
 
-      console.log("Loyalty pass issued:", loyaltyPass);
       return loyaltyPass;
     } catch (error) {
       console.error("Failed to issue loyalty pass:", error);
@@ -321,12 +301,8 @@ class VerxioManager {
     }
 
     try {
-      console.log(`Awarding XP for action: ${action}`);
-
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
-        console.log("Using browser fallback mode for XP awarding");
-
         // Simulate XP calculation
         const baseXP =
           {
@@ -387,8 +363,6 @@ class VerxioManager {
     try {
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
-        console.log("Using browser fallback mode for loyalty pass data");
-
         // Return mock data for browser
         return {
           publicKey: passAddress,

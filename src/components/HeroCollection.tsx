@@ -103,7 +103,6 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager, playerProfil
       // Simulate saving with loading effect
       await new Promise(resolve => setTimeout(resolve, 1500));
       // Save logic would go here
-      console.log('Progress saved successfully!');
       showSuccess('Progress Saved', 'Your game progress has been saved successfully!');
     } catch (error) {
       console.error('Error saving progress:', error);
@@ -114,52 +113,56 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager, playerProfil
   };
 
   const exportData = async () => {
-    soundManager.playButtonClick();
-    setIsExporting(true);
+    if (!playerProfile?.walletAddress) {
+      showError('Export Failed', 'No wallet address found');
+      return;
+    }
 
+    setIsExporting(true);
     try {
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      const data = storageManager.exportData('current_wallet');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+      const data = storageManager.exportData(playerProfile.walletAddress);
       const blob = new Blob([data], { type: 'application/json' });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `tactical-crypto-arena-backup-${Date.now()}.json`;
+      a.download = `tactical-crypto-arena-backup-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-
       showSuccess('Data Exported', 'Your game data has been exported successfully!');
     } catch (error) {
-      console.error('Error exporting data:', error);
-      showError('Export Failed', 'Failed to export data. Please try again.');
+      console.error('Failed to export data:', error);
+      showError('Export Failed', 'Failed to export data');
     } finally {
       setIsExporting(false);
     }
   };
 
   const importData = () => {
-    soundManager.playButtonClick();
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = '.json';
-    input.onchange = async (e) => {
+    input.onchange = (e) => {
       const file = (e.target as HTMLInputElement).files?.[0];
       if (file) {
-        setIsImporting(true);
-        try {
-          await new Promise(resolve => setTimeout(resolve, 1500));
-          const text = await file.text();
-          const data = JSON.parse(text);
-          if (data.heroes) {
-            onHeroUpdate(data.heroes);
-            showSuccess('Data Imported', 'Your game data has been imported successfully!');
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          try {
+            const data = e.target?.result as string;
+            if (playerProfile?.walletAddress) {
+              const success = storageManager.importData(data, playerProfile.walletAddress);
+              if (success) {
+                // Refresh the page to show imported data
+                window.location.reload();
+              }
+            }
+          } catch (error) {
+            showError('Import Failed', 'Invalid backup file format');
           }
-        } catch (error) {
-          console.error('Failed to import data:', error);
-          showError('Import Failed', 'Failed to import data. Please check the file format.');
-        } finally {
-          setIsImporting(false);
-        }
+        };
+        reader.readAsText(file);
       }
     };
     input.click();

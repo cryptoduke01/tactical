@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react';
+import { useWallet } from '@solana/wallet-adapter-react';
 import { verxioManager, VerxioLoyaltyPass } from '@/lib/verxioManager';
 import { PlayerProfile } from '@/lib/heroManager';
 import { soundManager } from '@/lib/soundManager';
@@ -10,11 +11,10 @@ interface VerxioIntegrationProps {
 }
 
 export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
+  const wallet = useWallet();
   const [loyaltyProgram, setLoyaltyProgram] = useState<any>(null);
   const [isInitializing, setIsInitializing] = useState(false);
   const [isMinting, setIsMinting] = useState(false);
-  const [mintAddress, setMintAddress] = useState('');
-  const [mintName, setMintName] = useState('');
 
   useEffect(() => {
     // Check if loyalty program exists
@@ -44,19 +44,25 @@ export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
   };
 
   const mintLoyaltyPass = async () => {
-    if (!mintAddress.trim() || !mintName.trim()) {
-      showError('Invalid Input', 'Please enter both wallet address and name');
+    if (!wallet.publicKey) {
+      showError('Wallet Not Connected', 'Please connect your wallet first');
       return;
     }
 
     setIsMinting(true);
     try {
-      const pass = await verxioManager.issuePlayerLoyaltyPass(mintAddress.trim(), mintName.trim());
+      // Simulate contract minting using connected wallet
+      const pass = await verxioManager.issuePlayerLoyaltyPass(
+        wallet.publicKey.toBase58(),
+        `Tactical_${wallet.publicKey.toBase58().slice(0, 8)}`
+      );
+
       if (pass) {
-        showSuccess('Loyalty Pass Minted!', `Successfully minted pass for ${mintName}`);
+        showSuccess('Loyalty Pass Minted!', `Successfully minted pass for ${wallet.publicKey.toBase58().slice(0, 8)}...`);
         soundManager.playSuccess();
-        setMintAddress('');
-        setMintName('');
+
+        // Refresh the page to show the new pass
+        window.location.reload();
       } else {
         showError('Minting Failed', 'Failed to mint loyalty pass');
       }
@@ -159,53 +165,36 @@ export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
         )}
       </div>
 
-      {/* Public Minting */}
+      {/* Connected Wallet Minting */}
       <div className="solana-card p-6">
-        <h3 className="text-xl font-bold text-white mb-4">🎫 Public Loyalty Pass Minting</h3>
+        <h3 className="text-xl font-bold text-white mb-4">🎫 Mint Your Loyalty Pass</h3>
         <p className="text-gray-300 mb-6">
-          Anyone can mint a loyalty pass on devnet! Enter a wallet address and name to create a new pass.
+          {wallet.connected
+            ? `Connected: ${wallet.publicKey?.toBase58().slice(0, 8)}...`
+            : 'Connect your wallet to mint a loyalty pass'
+          }
         </p>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Wallet Address
-            </label>
-            <input
-              type="text"
-              value={mintAddress}
-              onChange={(e) => setMintAddress(e.target.value)}
-              placeholder="Enter Solana wallet address"
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-            />
+        {wallet.connected ? (
+          <div className="text-center">
+            <button
+              onClick={mintLoyaltyPass}
+              disabled={isMinting || !loyaltyProgram}
+              className="solana-button w-full md:w-auto"
+            >
+              {isMinting ? 'Minting...' : '🚀 Mint Loyalty Pass (Simulated)'}
+            </button>
+
+            {!loyaltyProgram && (
+              <p className="text-yellow-400 text-sm mt-2">
+                ⚠️ Protocol must be initialized before minting
+              </p>
+            )}
           </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-300 mb-2">
-              Pass Name
-            </label>
-            <input
-              type="text"
-              value={mintName}
-              onChange={(e) => setMintName(e.target.value)}
-              placeholder="Enter pass name"
-              className="w-full px-4 py-2 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:border-purple-500 focus:ring-1 focus:ring-purple-500"
-            />
+        ) : (
+          <div className="text-center text-gray-400">
+            <p>Please connect your wallet to continue</p>
           </div>
-        </div>
-
-        <button
-          onClick={mintLoyaltyPass}
-          disabled={!mintAddress.trim() || !mintName.trim() || isMinting || !loyaltyProgram}
-          className="solana-button w-full md:w-auto"
-        >
-          {isMinting ? 'Minting...' : '🚀 Mint Loyalty Pass'}
-        </button>
-
-        {!loyaltyProgram && (
-          <p className="text-yellow-400 text-sm mt-2">
-            ⚠️ Protocol must be initialized before minting
-          </p>
         )}
       </div>
 

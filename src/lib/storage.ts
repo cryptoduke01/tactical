@@ -40,7 +40,6 @@ export class StorageManager {
       const key = `${STORAGE_KEYS.PLAYER_PROFILE}_${profile.walletAddress}`;
       localStorage.setItem(key, JSON.stringify(profile));
       localStorage.setItem(STORAGE_KEYS.LAST_SAVE, new Date().toISOString());
-      console.log(`Profile saved for wallet: ${profile.walletAddress}`);
     } catch (error) {
       console.error("Failed to save player profile:", error);
     }
@@ -53,7 +52,6 @@ export class StorageManager {
       const data = localStorage.getItem(key);
       if (data) {
         const profile = JSON.parse(data);
-        console.log(`Profile loaded for wallet: ${walletAddress}`);
         return profile;
       }
       return null;
@@ -68,7 +66,6 @@ export class StorageManager {
     try {
       const key = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
       localStorage.setItem(key, JSON.stringify(heroes));
-      console.log(`Heroes saved for wallet: ${walletAddress}`);
     } catch (error) {
       console.error("Failed to save heroes:", error);
     }
@@ -81,7 +78,6 @@ export class StorageManager {
       const data = localStorage.getItem(key);
       if (data) {
         const heroes = JSON.parse(data);
-        console.log(`Heroes loaded for wallet: ${walletAddress}`);
         return heroes;
       }
       return [];
@@ -96,7 +92,6 @@ export class StorageManager {
     try {
       const key = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
       localStorage.setItem(key, JSON.stringify(gameState));
-      console.log(`Game state saved for wallet: ${walletAddress}`);
     } catch (error) {
       console.error("Failed to save game state:", error);
     }
@@ -109,7 +104,6 @@ export class StorageManager {
       const data = localStorage.getItem(key);
       if (data) {
         const gameState = JSON.parse(data);
-        console.log(`Game state loaded for wallet: ${walletAddress}`);
         return gameState;
       }
       return null;
@@ -122,9 +116,13 @@ export class StorageManager {
   // Clear all data for a wallet
   async clearData(walletAddress: string): Promise<void> {
     try {
-      localStorage.removeItem(STORAGE_KEYS.PLAYER_PROFILE);
-      localStorage.removeItem(STORAGE_KEYS.HEROES);
-      localStorage.removeItem(STORAGE_KEYS.GAME_STATE);
+      const profileKey = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
+      const heroesKey = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
+      const gameStateKey = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
+
+      localStorage.removeItem(profileKey);
+      localStorage.removeItem(heroesKey);
+      localStorage.removeItem(gameStateKey);
       localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
 
       toast.success("Game data cleared");
@@ -137,27 +135,20 @@ export class StorageManager {
   // Get last save timestamp
   getLastSaveTime(): number {
     const lastSave = localStorage.getItem(STORAGE_KEYS.LAST_SAVE);
-    return lastSave ? parseInt(lastSave) : 0;
+    return lastSave ? new Date(lastSave).getTime() : 0;
   }
 
   // Check if data exists for wallet
   hasDataForWallet(walletAddress: string): boolean {
-    const profile = localStorage.getItem(STORAGE_KEYS.PLAYER_PROFILE);
-    if (!profile) return false;
-
-    try {
-      const parsedProfile = JSON.parse(profile);
-      return parsedProfile.wallet === walletAddress;
-    } catch {
-      return false;
-    }
+    const profileKey = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
+    const profile = localStorage.getItem(profileKey);
+    return profile !== null;
   }
 
   // Honeycomb integration methods (stubbed for now)
   private async saveToHoneycomb(profile: PlayerProfile): Promise<void> {
     // This would require actual Honeycomb blockchain transaction
     // For now, we'll simulate the process
-    console.log("Saving to Honeycomb blockchain:", profile);
 
     // Simulate blockchain delay
     await new Promise((resolve) => setTimeout(resolve, 1000));
@@ -167,15 +158,12 @@ export class StorageManager {
     // 2. Send it to the wallet for signing
     // 3. Submit to Solana network
     // 4. Wait for confirmation
-
-    console.log("Profile saved to Honeycomb (simulated)");
   }
 
   private async loadFromHoneycomb(
     walletAddress: string
   ): Promise<PlayerProfile | null> {
     // This would query the Honeycomb blockchain
-    console.log("Loading from Honeycomb blockchain:", walletAddress);
 
     // Simulate blockchain query delay
     await new Promise((resolve) => setTimeout(resolve, 500));
@@ -185,7 +173,6 @@ export class StorageManager {
     // 2. Parse blockchain data
     // 3. Return profile if found
 
-    console.log("Profile loaded from Honeycomb (simulated)");
     return null; // No profile found on blockchain
   }
 
@@ -193,36 +180,30 @@ export class StorageManager {
     walletAddress: string,
     heroes: Hero[]
   ): Promise<void> {
-    console.log("Saving heroes to Honeycomb blockchain:", {
-      walletAddress,
-      heroesCount: heroes.length,
-    });
-
     // Simulate blockchain transaction
     await new Promise((resolve) => setTimeout(resolve, 1500));
-
-    console.log("Heroes saved to Honeycomb (simulated)");
   }
 
   private async loadHeroesFromHoneycomb(
     walletAddress: string
   ): Promise<Hero[]> {
-    console.log("Loading heroes from Honeycomb blockchain:", walletAddress);
-
     // Simulate blockchain query
     await new Promise((resolve) => setTimeout(resolve, 800));
 
-    console.log("Heroes loaded from Honeycomb (simulated)");
     return []; // No heroes found on blockchain
   }
 
   // Export data for backup
   exportData(walletAddress: string): string {
     try {
+      const profileKey = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
+      const heroesKey = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
+      const gameStateKey = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
+
       const data = {
-        playerProfile: localStorage.getItem(STORAGE_KEYS.PLAYER_PROFILE),
-        heroes: localStorage.getItem(STORAGE_KEYS.HEROES),
-        gameState: localStorage.getItem(STORAGE_KEYS.GAME_STATE),
+        playerProfile: localStorage.getItem(profileKey),
+        heroes: localStorage.getItem(heroesKey),
+        gameState: localStorage.getItem(gameStateKey),
         exportDate: new Date().toISOString(),
         walletAddress,
       };
@@ -235,20 +216,23 @@ export class StorageManager {
   }
 
   // Import data from backup
-  importData(backupData: string): boolean {
+  importData(backupData: string, walletAddress: string): boolean {
     try {
       const data = JSON.parse(backupData);
+      const profileKey = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
+      const heroesKey = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
+      const gameStateKey = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
 
       if (data.playerProfile) {
-        localStorage.setItem(STORAGE_KEYS.PLAYER_PROFILE, data.playerProfile);
+        localStorage.setItem(profileKey, data.playerProfile);
       }
 
       if (data.heroes) {
-        localStorage.setItem(STORAGE_KEYS.HEROES, data.heroes);
+        localStorage.setItem(heroesKey, data.heroes);
       }
 
       if (data.gameState) {
-        localStorage.setItem(STORAGE_KEYS.GAME_STATE, data.gameState);
+        localStorage.setItem(gameStateKey, data.gameState);
       }
 
       toast.success("Backup data imported successfully!");

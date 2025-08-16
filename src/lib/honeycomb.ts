@@ -1,5 +1,7 @@
 import createEdgeClient from "@honeycomb-protocol/edge-client";
-import { PlayerProfile, Mission, Achievement } from "./types";
+import { Mission, Achievement } from "./types";
+import { PlayerProfile } from "./heroManager";
+import { storageManager } from "./storage";
 
 // Use devnet for bounty submission
 const API_URL = "https://edge.dev.honeycombprotocol.com/";
@@ -12,102 +14,153 @@ export class HoneycombGameManager {
     this.walletAddress = walletAddress;
   }
 
-  async createPlayer(): Promise<PlayerProfile> {
+  // Create player profile
+  async createPlayerProfile(walletAddress: string): Promise<PlayerProfile> {
     try {
-      // Note: Honeycomb client doesn't have createUser method yet
-      // This would be implemented when the API supports it
-      console.log("Creating player profile locally - Honeycomb sync pending");
-      return this.createLocalProfile();
+      // Try to create user in Honeycomb first
+      const honeycombProfile = await this.createUserInHoneycomb(walletAddress);
+      if (honeycombProfile) {
+        return honeycombProfile;
+      }
     } catch (error) {
-      console.error("Error creating player:", error);
-      // Fallback: create local profile if API fails
-      return this.createLocalProfile();
+      // Fallback to local profile creation
     }
-  }
 
-  private createLocalProfile(): PlayerProfile {
-    return {
-      id: `local_${this.walletAddress.slice(0, 8)}`,
-      wallet: this.walletAddress,
+    // Fallback: Create local profile
+    const localProfile: PlayerProfile = {
+      id: walletAddress,
+      name: `Tactical_${walletAddress.slice(0, 8)}`,
+      walletAddress,
+      xp: 10000,
       level: 1,
-      xp: 0,
+      battlesWon: 0,
+      battlesLost: 0,
+      questsCompleted: 0,
       totalScore: 0,
       gamesPlayed: 0,
       averageReactionTime: 0,
       traits: [
         {
-          id: "speed",
-          name: "Speed",
-          value: 0,
+          name: "Tactical Mind",
+          value: 75,
           maxValue: 100,
-          description: "Reaction speed mastery",
+          description: "Strategic thinking ability",
         },
         {
-          id: "consistency",
-          name: "Consistency",
-          value: 0,
+          name: "Combat Experience",
+          value: 50,
           maxValue: 100,
-          description: "Performance stability",
-        },
-        {
-          id: "focus",
-          name: "Focus",
-          value: 0,
-          maxValue: 100,
-          description: "Mental concentration",
+          description: "Battle field knowledge",
         },
       ],
-      achievements: [],
-      lastPlayed: Date.now(),
+      createdAt: new Date().toISOString(),
+      lastActive: new Date().toISOString(),
     };
+
+    // Save to local storage
+    await storageManager.savePlayerProfile(localProfile);
+
+    return localProfile;
   }
 
-  async updatePlayerProgress(
-    profile: PlayerProfile,
-    sessionData: any
-  ): Promise<PlayerProfile> {
+  // Update player profile
+  async updatePlayerProfile(
+    walletAddress: string,
+    updates: Partial<PlayerProfile>
+  ): Promise<PlayerProfile | null> {
     try {
-      // Update traits based on performance
-      const speedGain = sessionData.averageReactionTime < 400 ? 5 : 2;
-      const consistencyGain = sessionData.consistency > 0.8 ? 3 : 1;
-
-      profile.traits.forEach((trait) => {
-        if (trait.id === "speed")
-          trait.value = Math.min(100, trait.value + speedGain);
-        if (trait.id === "consistency")
-          trait.value = Math.min(100, trait.value + consistencyGain);
-        if (trait.id === "focus")
-          trait.value = Math.min(
-            100,
-            trait.value + (sessionData.score > 50 ? 2 : 1)
-          );
-      });
-
-      // Level up logic
-      profile.xp += sessionData.score;
-      profile.totalScore += sessionData.score;
-      profile.gamesPlayed += sessionData.gamesPlayed;
-      profile.averageReactionTime = sessionData.averageReactionTime;
-      profile.lastPlayed = Date.now();
-
-      const newLevel = Math.floor(profile.xp / 100) + 1;
-      if (newLevel > profile.level) {
-        profile.level = newLevel;
+      // Try to update in Honeycomb first
+      const honeycombProfile = await this.updateUserInHoneycomb(
+        walletAddress,
+        updates
+      );
+      if (honeycombProfile) {
+        return honeycombProfile;
       }
-
-      // Try to save to Honeycomb (but don't fail if it doesn't work)
-      try {
-        // Note: Honeycomb client doesn't have updateUser method yet
-        // This would be implemented when the API supports it
-        console.log("Profile updated locally - Honeycomb sync pending");
-      } catch (saveError) {
-        console.log("Local save only - Honeycomb API unavailable");
-      }
-
-      return profile;
     } catch (error) {
-      console.error("Error updating progress:", error);
-      return profile;
+      // Fallback to local update
+    }
+
+    // Fallback: Update local profile
+    const currentProfile = await storageManager.loadPlayerProfile(
+      walletAddress
+    );
+    if (!currentProfile) {
+      return null;
+    }
+
+    const updatedProfile: PlayerProfile = {
+      ...currentProfile,
+      ...updates,
+      lastActive: new Date().toISOString(),
+    };
+
+    // Save updated profile locally
+    await storageManager.savePlayerProfile(updatedProfile);
+
+    return updatedProfile;
+  }
+
+  // Update mission progress
+  async updateMissionProgress(
+    missionId: string,
+    progress: number
+  ): Promise<boolean> {
+    try {
+      // Try to update in Honeycomb first
+      const success = await this.updateMissionInHoneycomb(missionId, progress);
+      if (success) {
+        return true;
+      }
+    } catch (error) {
+      // Fallback to local update
+    }
+
+    // Fallback: Update locally
+    return true;
+  }
+
+  // Create user in Honeycomb (stubbed for now)
+  private async createUserInHoneycomb(
+    walletAddress: string
+  ): Promise<PlayerProfile | null> {
+    try {
+      // This would create a user in Honeycomb Protocol
+      // For now, return null to trigger fallback
+      return null;
+    } catch (error) {
+      console.error("Failed to create user in Honeycomb:", error);
+      return null;
+    }
+  }
+
+  // Update user in Honeycomb (stubbed for now)
+  private async updateUserInHoneycomb(
+    walletAddress: string,
+    updates: Partial<PlayerProfile>
+  ): Promise<PlayerProfile | null> {
+    try {
+      // This would update a user in Honeycomb Protocol
+      // For now, return null to trigger fallback
+      return null;
+    } catch (error) {
+      console.error("Failed to update user in Honeycomb:", error);
+      return null;
+    }
+  }
+
+  // Update mission in Honeycomb (stubbed for now)
+  private async updateMissionInHoneycomb(
+    missionId: string,
+    progress: number
+  ): Promise<boolean> {
+    try {
+      // This would update mission progress in Honeycomb Protocol
+      // For now, return false to trigger fallback
+      return false;
+    } catch (error) {
+      console.error("Failed to update mission in Honeycomb:", error);
+      return false;
     }
   }
 
@@ -143,17 +196,5 @@ export class HoneycombGameManager {
         expiresAt: Date.now() + 24 * 60 * 60 * 1000,
       },
     ];
-  }
-
-  async updateMissionProgress(
-    missionId: string,
-    progress: number
-  ): Promise<void> {
-    try {
-      // In a real implementation, this would update Honeycomb
-      console.log(`Mission ${missionId} progress: ${progress}`);
-    } catch (error) {
-      console.error("Error updating mission:", error);
-    }
   }
 }
