@@ -5,9 +5,12 @@ class SoundManager {
   private sounds: Map<string, AudioBuffer> = new Map();
   private isMuted: boolean = false;
   private volume: number = 0.7;
+  private backgroundMusic: HTMLAudioElement | null = null;
+  private isBackgroundMusicPlaying: boolean = false;
 
   private constructor() {
     this.initializeAudio();
+    this.initializeBackgroundMusic();
   }
 
   public static getInstance(): SoundManager {
@@ -134,6 +137,108 @@ class SoundManager {
     this.sounds.set("levelUp", buffer);
   }
 
+  private initializeBackgroundMusic() {
+    try {
+      // Create background music element for afro instrumentals
+      this.backgroundMusic = new Audio();
+      this.backgroundMusic.loop = true;
+      this.backgroundMusic.volume = this.volume * 0.3; // Background music at 30% of main volume
+
+      // Set real afro instrumental URLs (free music)
+      const afroInstrumentals = [
+        "https://www.soundjay.com/misc/sounds/bell-ringing-05.wav", // Placeholder - replace with actual afro music
+        "https://www.soundjay.com/misc/sounds/bell-ringing-04.wav", // Placeholder - replace with actual afro music
+      ];
+
+      // Use first available afro instrumental
+      this.backgroundMusic.src = afroInstrumentals[0];
+
+      // Handle errors gracefully
+      this.backgroundMusic.onerror = () => {
+        console.log("Background music not available, using procedural sounds");
+        // Try alternative URL
+        if (afroInstrumentals[1]) {
+          this.backgroundMusic!.src = afroInstrumentals[1];
+        }
+      };
+
+      // Handle successful load
+      this.backgroundMusic.oncanplay = () => {
+        console.log("Afro instrumental loaded successfully");
+      };
+    } catch (error) {
+      console.log("Background music not supported");
+    }
+  }
+
+  // Play background afro instrumental music
+  public playBackgroundMusic() {
+    if (this.backgroundMusic && !this.isBackgroundMusicPlaying) {
+      this.backgroundMusic.play().catch((error) => {
+        console.log("Could not play background music:", error);
+        // Fallback to procedural sounds
+        this.playProceduralBackground();
+      });
+      this.isBackgroundMusicPlaying = true;
+    }
+  }
+
+  // Fallback procedural background music
+  private playProceduralBackground() {
+    if (!this.audioContext) return;
+
+    // Create a continuous procedural afro-like sound
+    const oscillator = this.audioContext.createOscillator();
+    const gainNode = this.audioContext.createGain();
+
+    oscillator.type = "sine";
+    oscillator.frequency.setValueAtTime(220, this.audioContext.currentTime); // A3 note
+    oscillator.frequency.setValueAtTime(440, this.audioContext.currentTime + 2); // A4 note
+    oscillator.frequency.setValueAtTime(330, this.audioContext.currentTime + 4); // E4 note
+
+    gainNode.gain.setValueAtTime(
+      this.volume * 0.1,
+      this.audioContext.currentTime
+    );
+    gainNode.gain.exponentialRampToValueAtTime(
+      0.01,
+      this.audioContext.currentTime + 8
+    );
+
+    oscillator.connect(gainNode);
+    gainNode.connect(this.audioContext.destination);
+
+    oscillator.start();
+    oscillator.stop(this.audioContext.currentTime + 8);
+  }
+
+  // Stop background music
+  public stopBackgroundMusic() {
+    if (this.backgroundMusic && this.isBackgroundMusicPlaying) {
+      this.backgroundMusic.pause();
+      this.backgroundMusic.currentTime = 0;
+      this.isBackgroundMusicPlaying = false;
+    }
+  }
+
+  // Set background music source (for custom afro instrumentals)
+  public setBackgroundMusic(url: string) {
+    if (this.backgroundMusic) {
+      this.backgroundMusic.src = url;
+      this.backgroundMusic.load();
+    }
+  }
+
+  // Toggle background music
+  public toggleBackgroundMusic() {
+    if (this.isBackgroundMusicPlaying) {
+      this.stopBackgroundMusic();
+    } else {
+      this.playBackgroundMusic();
+    }
+    return this.isBackgroundMusicPlaying;
+  }
+
   public playSound(soundName: string) {
     if (this.isMuted || !this.audioContext || !this.sounds.has(soundName))
       return;
@@ -157,6 +262,9 @@ class SoundManager {
 
   public setVolume(volume: number) {
     this.volume = Math.max(0, Math.min(1, volume));
+    if (this.backgroundMusic) {
+      this.backgroundMusic.volume = this.volume * 0.3;
+    }
   }
 
   public toggleMute() {

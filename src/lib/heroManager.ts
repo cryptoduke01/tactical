@@ -2,6 +2,7 @@ import createEdgeClient from "@honeycomb-protocol/edge-client";
 import { sendClientTransactions } from "@honeycomb-protocol/edge-client/client/walletHelpers";
 import { storageManager } from "./storage";
 import { showSuccess, showError, showWarning } from "./toastManager";
+import { verxioManager, VerxioLoyaltyPass } from "./verxioManager";
 
 // Use Honeynet for testing (unlimited SOL available)
 const API_URL = "https://edge.test.honeycombprotocol.com/";
@@ -29,16 +30,21 @@ export interface HeroTrait {
 
 export interface PlayerProfile {
   id: string;
-  wallet: string;
+  walletAddress: string;
   name: string;
   level: number;
   xp: number;
-  heroes: Hero[];
   battlesWon: number;
   battlesLost: number;
   questsCompleted: number;
-  reputation: number;
-  lastActive: number;
+  totalScore: number;
+  gamesPlayed: number;
+  averageReactionTime: number;
+  traits: HeroTrait[];
+  createdAt: string;
+  lastActive: string;
+  loyaltyPass?: VerxioLoyaltyPass; // Verxio loyalty pass
+  verxioTier?: string; // Current Verxio tier
 }
 
 export class HeroManager {
@@ -64,68 +70,152 @@ export class HeroManager {
 
   async createPlayerProfile(walletAddress: string): Promise<PlayerProfile> {
     try {
-      console.log("Creating player profile for wallet:", walletAddress);
+      // Try to create user in Honeycomb (stubbed for now)
+      console.log("Creating user profile for wallet:", walletAddress);
 
-      // Check if profile already exists in storage
-      const existingProfile = await storageManager.loadPlayerProfile(
-        walletAddress
-      );
-      if (existingProfile) {
-        showSuccess("Profile Loaded", "Existing profile loaded successfully!");
-        return existingProfile;
+      // Initialize Verxio Protocol if not ready
+      if (!verxioManager.isReady()) {
+        console.log("Verxio not ready, creating loyalty program...");
+        await verxioManager.createGameLoyaltyProgram();
       }
 
-      // Create new profile
-      const newProfile: PlayerProfile = {
-        id: `honeycomb_${walletAddress.slice(0, 8)}`,
-        wallet: walletAddress,
+      // Create Verxio loyalty pass for the player
+      let loyaltyPass: VerxioLoyaltyPass | undefined;
+      if (verxioManager.isReady()) {
+        try {
+          const pass = await verxioManager.issuePlayerLoyaltyPass(
+            walletAddress,
+            `Tactical_${walletAddress.slice(0, 8)}`
+          );
+          if (pass) {
+            loyaltyPass = pass;
+            showSuccess(
+              "Loyalty Pass Created",
+              "Your on-chain loyalty pass has been issued!"
+            );
+          }
+        } catch (error) {
+          console.log("Failed to create Verxio loyalty pass:", error);
+        }
+      }
+
+      // Create local profile with 10,000 XP for new wallets
+      const profile: PlayerProfile = {
+        id: walletAddress,
         name: `Tactical_${walletAddress.slice(0, 8)}`,
+        walletAddress,
+        xp: 10000, // Give new wallets 10k XP
         level: 1,
-        xp: 10000, // Give new wallets a huge XP balance to start with
-        heroes: [],
         battlesWon: 0,
         battlesLost: 0,
         questsCompleted: 0,
-        reputation: 100,
-        lastActive: Date.now(),
+        totalScore: 0,
+        gamesPlayed: 0,
+        averageReactionTime: 0,
+        traits: [
+          {
+            name: "Tactical Mind",
+            value: 75,
+            maxValue: 100,
+            description: "Strategic thinking ability",
+          },
+          {
+            name: "Combat Experience",
+            value: 50,
+            maxValue: 100,
+            description: "Battle field knowledge",
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+        loyaltyPass,
+        verxioTier: loyaltyPass?.currentTier || "Grind",
       };
 
-      // Try to create on Honeycomb first
-      try {
-        const { createNewUserWithProfileTransaction: txResponse } =
-          await client.createNewUserWithProfileTransaction({
-            project: this.projectAddress,
-            wallet: walletAddress,
-            payer: walletAddress,
-            profileIdentity: "main",
-            userInfo: {
-              name: newProfile.name,
-              bio: "Tactical Crypto Arena Operator",
-              pfp: "https://example.com/default-avatar.png",
-            },
-          });
-
-        console.log("Honeycomb profile creation transaction:", txResponse);
-        showSuccess(
-          "Profile Created",
-          "Profile created on blockchain successfully!"
-        );
-      } catch (error) {
-        console.error("Failed to create profile on Honeycomb:", error);
-        showWarning(
-          "Profile Created Locally",
-          "Profile created locally (blockchain unavailable)"
-        );
-      }
-
       // Save to local storage
-      await storageManager.savePlayerProfile(newProfile);
+      storageManager.savePlayerProfile(profile);
 
-      return newProfile;
+      return profile;
     } catch (error) {
       console.error("Error creating player profile:", error);
-      showError("Profile Creation Failed", "Failed to create player profile");
-      throw error;
+
+      // Fallback to local profile creation
+      const fallbackProfile: PlayerProfile = {
+        id: walletAddress,
+        name: `Tactical_${walletAddress.slice(0, 8)}`,
+        walletAddress,
+        xp: 10000, // Give new wallets 10k XP
+        level: 1,
+        battlesWon: 0,
+        battlesLost: 0,
+        questsCompleted: 0,
+        totalScore: 0,
+        gamesPlayed: 0,
+        averageReactionTime: 0,
+        traits: [
+          {
+            name: "Tactical Mind",
+            value: 75,
+            maxValue: 100,
+            description: "Strategic thinking ability",
+          },
+          {
+            name: "Combat Experience",
+            value: 50,
+            maxValue: 100,
+            description: "Battle field knowledge",
+          },
+        ],
+        createdAt: new Date().toISOString(),
+        lastActive: new Date().toISOString(),
+      };
+
+      storageManager.savePlayerProfile(fallbackProfile);
+      return fallbackProfile;
+    }
+  }
+
+  // Update player XP
+  async updatePlayerXP(walletAddress: string, xpChange: number): Promise<void> {
+    try {
+      const profile = await this.getPlayerProfile(walletAddress);
+      if (profile) {
+        profile.xp = Math.max(0, profile.xp + xpChange); // Prevent negative XP
+        profile.lastActive = new Date().toISOString();
+        storageManager.savePlayerProfile(profile);
+
+        // Update XP on-chain through Verxio Protocol
+        if (profile.loyaltyPass && verxioManager.isReady()) {
+          try {
+            const action = xpChange > 0 ? "quest_complete" : "hero_action";
+            const result = await verxioManager.awardGameXP(
+              profile.loyaltyPass.publicKey,
+              action,
+              Math.abs(xpChange) / 10 // Convert to Verxio points (1 XP = 0.1 Verxio points)
+            );
+
+            if (result?.success) {
+              profile.verxioTier = result.newTier;
+              storageManager.savePlayerProfile(profile);
+              console.log(`XP updated on-chain. New tier: ${result.newTier}`);
+            }
+          } catch (error) {
+            console.log("Failed to update XP on-chain:", error);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error updating player XP:", error);
+    }
+  }
+
+  // Get player profile
+  async getPlayerProfile(walletAddress: string): Promise<PlayerProfile | null> {
+    try {
+      return await storageManager.loadPlayerProfile(walletAddress);
+    } catch (error) {
+      console.error("Error getting player profile:", error);
+      return null;
     }
   }
 
@@ -450,7 +540,7 @@ export class HeroManager {
         ...profile,
         xp: profile.xp + xpGained,
         questsCompleted: profile.questsCompleted + 1,
-        lastActive: Date.now(),
+        lastActive: new Date().toISOString(),
       };
 
       // Check for level up
@@ -495,7 +585,7 @@ export class HeroManager {
       const updatedProfile: PlayerProfile = {
         ...profile,
         ...updates,
-        lastActive: Date.now(),
+        lastActive: new Date().toISOString(),
       };
 
       // Save updated profile

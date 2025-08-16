@@ -1,6 +1,6 @@
 'use client'
 import { useState } from 'react';
-import { Hero, HeroManager } from '@/lib/heroManager';
+import { Hero, HeroManager, PlayerProfile } from '@/lib/heroManager';
 import { storageManager } from '@/lib/storage';
 import { soundManager } from '@/lib/soundManager';
 import { showSuccess, showError } from '@/lib/toastManager';
@@ -9,9 +9,10 @@ interface HeroCollectionProps {
   heroes: Hero[];
   onHeroUpdate: (heroes: Hero[]) => void;
   heroManager: HeroManager;
+  playerProfile: PlayerProfile | null;
 }
 
-export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollectionProps) {
+export function HeroCollection({ heroes, onHeroUpdate, heroManager, playerProfile }: HeroCollectionProps) {
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
   const [isSummoning, setIsSummoning] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -41,6 +42,14 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
 
   const summonNewHero = async () => {
     soundManager.playButtonClick();
+
+    // Check XP cost
+    const summonCost = 100;
+    if (playerProfile && playerProfile.xp < summonCost) {
+      showError('Insufficient XP', `You need ${summonCost} XP to summon a hero. Current XP: ${playerProfile.xp}`);
+      return;
+    }
+
     setIsSummoning(true);
 
     try {
@@ -63,9 +72,21 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
         mana: 70
       };
 
-      onHeroUpdate([...heroes, newHero]);
-      soundManager.playHeroSummon();
-      showSuccess('Hero Summoned!', `New hero "${newHero.name}" has joined your collection!`);
+      // Deduct XP cost and update profile
+      if (playerProfile) {
+        const updatedProfile = {
+          ...playerProfile,
+          xp: playerProfile.xp - summonCost
+        };
+        // Update profile in parent component
+        onHeroUpdate([...heroes, newHero]);
+        // Trigger profile update
+        if (typeof window !== 'undefined') {
+          window.dispatchEvent(new CustomEvent('profileUpdate', { detail: updatedProfile }));
+        }
+      }
+
+      showSuccess('Hero Summoned!', `New hero "${newHero.name}" has joined your collection! Cost: ${summonCost} XP`);
     } catch (error) {
       console.error('Error summoning hero:', error);
       showError('Summon Failed', 'Failed to summon new hero. Please try again.');
@@ -159,6 +180,14 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
     if (!customizingHero) return;
 
     soundManager.playButtonClick();
+
+    // Check XP cost for customization
+    const customizeCost = 25;
+    if (playerProfile && playerProfile.xp < customizeCost) {
+      showError('Insufficient XP', `You need ${customizeCost} XP to customize a hero. Current XP: ${playerProfile.xp}`);
+      return;
+    }
+
     const updatedHero = {
       ...customizingHero,
       ...customizationData
@@ -168,9 +197,22 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       h.id === customizingHero.id ? updatedHero : h
     );
 
-    onHeroUpdate(updatedHeroes);
+    // Deduct XP cost and update profile
+    if (playerProfile) {
+      const updatedProfile = {
+        ...playerProfile,
+        xp: playerProfile.xp - customizeCost
+      };
+      // Update profile in parent component
+      onHeroUpdate(updatedHeroes);
+      // Trigger profile update
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('profileUpdate', { detail: updatedProfile }));
+      }
+    }
+
     setCustomizingHero(null);
-    showSuccess('Hero Updated', `Hero "${updatedHero.name}" has been customized successfully!`);
+    showSuccess('Hero Updated', `Hero "${updatedHero.name}" has been customized successfully! Cost: ${customizeCost} XP`);
   };
 
   const openHeroDetails = (hero: Hero) => {
@@ -181,7 +223,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
   return (
     <div className="space-y-6">
       {/* Toolbar with Save/Import/Export */}
-      <div className="game-panel p-6">
+      <div className="game-panel p-6 fade-in-up">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
@@ -193,12 +235,16 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={saveProgress}
               disabled={isSaving}
-              className="solana-button success disabled:opacity-50"
+              className="solana-button success disabled:opacity-50 button-press"
             >
               {isSaving ? (
                 <>
-                  <div className="loading-spinner mx-auto mb-1"></div>
-                  Saving...
+                  <div className="loading-wave">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                  </div>
+                  <span className="ml-2">Saving...</span>
                 </>
               ) : (
                 '💾 Save Progress'
@@ -208,12 +254,16 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={exportData}
               disabled={isExporting}
-              className="solana-button secondary disabled:opacity-50"
+              className="solana-button secondary disabled:opacity-50 button-press"
             >
               {isExporting ? (
                 <>
-                  <div className="loading-spinner mx-auto mb-1"></div>
-                  Exporting...
+                  <div className="loading-wave">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                  </div>
+                  <span className="ml-2">Exporting...</span>
                 </>
               ) : (
                 '📤 Export Data'
@@ -223,12 +273,16 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={importData}
               disabled={isImporting}
-              className="solana-button warning disabled:opacity-50"
+              className="solana-button warning disabled:opacity-50 button-press"
             >
               {isImporting ? (
                 <>
-                  <div className="loading-spinner mx-auto mb-1"></div>
-                  Importing...
+                  <div className="loading-wave">
+                    <div></div>
+                    <div></div>
+                    <div></div>
+                  </div>
+                  <span className="ml-2">Importing...</span>
                 </>
               ) : (
                 '📥 Import Data'
@@ -239,7 +293,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       </div>
 
       {/* Available Heroes Display */}
-      <div className="game-panel p-6">
+      <div className="game-panel p-6 slide-in-right">
         <h3 className="text-2xl font-bold text-white mb-6 text-center">
           🎯 Available Heroes: {heroes.length}
         </h3>
@@ -251,11 +305,12 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <p className="text-slate-300 text-sm">Summon your first tactical unit to begin your mission.</p>
           </div>
         ) : (
-          <div className="responsive-grid">
-            {heroes.map((hero) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {heroes.map((hero, index) => (
               <div
                 key={hero.id}
-                className={`group cursor-pointer transform hover:scale-105 transition-all duration-500 ${getRarityClass(hero.rarity)}`}
+                className={`group cursor-pointer hover-lift ${getRarityClass(hero.rarity)}`}
+                style={{ animationDelay: `${index * 0.1}s` }}
               >
                 {/* Hero Header */}
                 <div className="flex items-center justify-between mb-4">
@@ -302,7 +357,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
                       e.stopPropagation();
                       startCustomization(hero);
                     }}
-                    className="flex-1 solana-button warning text-sm"
+                    className="flex-1 solana-button text-sm"
                   >
                     Customize
                   </button>

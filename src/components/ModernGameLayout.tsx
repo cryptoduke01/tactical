@@ -8,6 +8,7 @@ import { HeroCollection } from './HeroCollection';
 import { BattleArena } from './BattleArena';
 import { DeFiQuests } from './DeFiQuests';
 import { PlayerStats } from './PlayerStats';
+import { VerxioIntegration } from './VerxioIntegration';
 import { HeroManager, Hero, PlayerProfile } from '@/lib/heroManager';
 
 interface ModernGameLayoutProps {
@@ -16,13 +17,47 @@ interface ModernGameLayoutProps {
 
 export function ModernGameLayout({ children }: ModernGameLayoutProps) {
   const wallet = useWallet();
-  const [activeTab, setActiveTab] = useState<'heroes' | 'battle' | 'quests' | 'stats'>('heroes');
+  const [activeTab, setActiveTab] = useState<'heroes' | 'battle' | 'quests' | 'stats' | 'verxio'>('heroes');
   const [isMuted, setIsMuted] = useState(false);
   const [volume, setVolume] = useState(0.7);
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [playerProfile, setPlayerProfile] = useState<PlayerProfile | null>(null);
   const [heroes, setHeroes] = useState<Hero[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+  const [solBalance, setSolBalance] = useState<number | null>(null);
+
+  // Fetch SOL balance
+  useEffect(() => {
+    const fetchSolBalance = async () => {
+      if (wallet.publicKey) {
+        try {
+          // This would integrate with real Solana RPC
+          // For now, showing placeholder
+          setSolBalance(0.00);
+        } catch (error) {
+          console.log('Could not fetch SOL balance:', error);
+          setSolBalance(null);
+        }
+      }
+    };
+
+    fetchSolBalance();
+  }, [wallet.publicKey]);
+
+  // Check if user has seen onboarding
+  useEffect(() => {
+    const hasSeenOnboarding = localStorage.getItem('hasSeenOnboarding');
+    if (!hasSeenOnboarding) {
+      setShowOnboarding(true);
+    }
+  }, []);
+
+  // Mark onboarding as complete
+  const completeOnboarding = () => {
+    localStorage.setItem('hasSeenOnboarding', 'true');
+    setShowOnboarding(false);
+  };
 
   // Memoize heroManager to prevent recreation on every render
   const heroManager = useMemo(() => new HeroManager(), []);
@@ -54,6 +89,18 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
   useEffect(() => {
     const unsubscribe = toastManager.subscribe(setToasts);
     return unsubscribe;
+  }, []);
+
+  // Listen for profile updates from hero actions
+  useEffect(() => {
+    const handleProfileUpdate = (event: CustomEvent) => {
+      setPlayerProfile(event.detail);
+    };
+
+    window.addEventListener('profileUpdate', handleProfileUpdate as EventListener);
+    return () => {
+      window.removeEventListener('profileUpdate', handleProfileUpdate as EventListener);
+    };
   }, []);
 
   const handleTabChange = useCallback((tab: string) => {
@@ -103,6 +150,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
       case 'battle': return '⚔️';
       case 'quests': return '🎯';
       case 'stats': return '📊';
+      case 'verxio': return '🔗';
       default: return '❓';
     }
   }, []);
@@ -113,9 +161,28 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
       case 'battle': return 'Battle';
       case 'quests': return 'Quests';
       case 'stats': return 'Stats';
+      case 'verxio': return 'Verxio';
       default: return 'Unknown';
     }
   }, []);
+
+  // Get dynamic greeting based on time
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+    if (hour >= 5 && hour < 12) {
+      return { greeting: 'Good morning', emoji: '🌅' };
+    } else if (hour >= 12 && hour < 17) {
+      return { greeting: 'Good afternoon', emoji: '☀️' };
+    } else if (hour >= 17 && hour < 21) {
+      return { greeting: 'Good evening', emoji: '🌆' };
+    } else {
+      return { greeting: 'Good night', emoji: '🌙' };
+    }
+  };
+
+  const greeting = getGreeting();
 
   if (isLoading) {
     return (
@@ -142,7 +209,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
         </div>
 
         {/* Navigation Icons */}
-        {(['heroes', 'battle', 'quests', 'stats'] as const).map((tab) => (
+        {(['heroes', 'battle', 'quests', 'stats', 'verxio'] as const).map((tab) => (
           <div
             key={tab}
             className={`nav-icon ${activeTab === tab ? 'active' : ''}`}
@@ -155,7 +222,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
         ))}
 
         {/* Settings Icon */}
-        <div className="nav-icon mt-auto" data-tooltip="Settings">
+        <div className="nav-icon mt-auto" data-tooltip="Settings & Help" onClick={() => setShowOnboarding(true)}>
           <span className="text-xl">⚙️</span>
         </div>
       </div>
@@ -168,25 +235,76 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
             {/* Greeting */}
             <div className="text-white">
               <h1 className="text-xl font-semibold">
-                Good evening, {playerProfile?.name || 'Commander'}
+                {greeting.greeting}, {playerProfile?.name || 'Commander'}
               </h1>
               <p className="text-[#14F195] text-sm">Ready for tactical deployment?</p>
             </div>
 
-            {/* Search Bar */}
+            {/* Solana Devnet Status and XP Balance */}
             <div className="hidden md:flex flex-1 max-w-md mx-8">
-              <div className="relative w-full">
-                <input
-                  type="text"
-                  placeholder="Search heroes, quests..."
-                  className="w-full bg-slate-800/30 border border-slate-600/40 rounded-xl px-4 py-2 text-white placeholder-slate-300 focus:outline-none focus:border-[#9945FF]/60"
-                />
-                <span className="absolute right-3 top-2.5 text-slate-300">🔍</span>
+              <div className="flex items-center gap-6 w-full">
+                {/* Solana Devnet Status */}
+                <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
+                  <span className="text-[#14F195] text-sm font-medium">DEVNET</span>
+                </div>
+
+                {/* XP Balance */}
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 text-sm">XP:</span>
+                  <span className="text-[#9945FF] font-bold text-lg">
+                    {playerProfile?.xp?.toLocaleString() || '10,000'}
+                  </span>
+                </div>
+
+                {/* SOL Balance */}
+                <div className="flex items-center gap-2">
+                  <span className="text-slate-300 text-sm">SOL:</span>
+                  <span className="text-[#14F195] font-bold text-lg">
+                    {solBalance !== null ? solBalance.toFixed(2) : '--'}
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* User Actions */}
-            <div className="flex items-center space-x-3">
+            <div className="flex items-center space-x-4">
+              {/* Sound Control */}
+              <button
+                onClick={toggleMute}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 hover:scale-110"
+                title={isMuted ? 'Unmute Sound' : 'Mute Sound'}
+              >
+                <span className="text-lg">
+                  {isMuted ? '🔇' : '🔊'}
+                </span>
+              </button>
+
+              {/* Background Music Toggle */}
+              <button
+                onClick={() => soundManager.toggleBackgroundMusic()}
+                className="w-10 h-10 rounded-full bg-gradient-to-br from-[#14F195]/50 to-[#10C07A]/30 border border-[#14F195]/40 flex items-center justify-center text-white hover:from-[#14F195]/50 hover:to-[#10C07A]/30 hover:border-[#14F195]/50 transition-all duration-300 hover:scale-110"
+                title="Toggle Background Music"
+              >
+                <span className="text-lg">🎵</span>
+              </button>
+
+              {/* Volume Slider */}
+              <div className="hidden md:block">
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.1"
+                  value={volume}
+                  onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
+                  className="w-20 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
+                  style={{
+                    background: `linear-gradient(to right, #9945FF 0%, #9945FF ${volume * 100}%, #374151 ${volume * 100}%, #374151 100%)`
+                  }}
+                />
+              </div>
+
               <div className="nav-icon" data-tooltip="Shop">
                 <span className="text-lg">🛒</span>
               </div>
@@ -205,6 +323,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
               heroes={heroes}
               onHeroUpdate={handleHeroUpdate}
               heroManager={heroManager}
+              playerProfile={playerProfile}
             />
           )}
 
@@ -229,13 +348,19 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
               heroes={heroes}
             />
           )}
+
+          {activeTab === 'verxio' && (
+            <VerxioIntegration
+              playerProfile={playerProfile}
+            />
+          )}
         </div>
       </div>
 
       {/* Mobile Bottom Navigation */}
       <div className="mobile-nav md:hidden">
         <div className="flex justify-around items-center py-3">
-          {(['heroes', 'battle', 'quests', 'stats'] as const).map((tab) => (
+          {(['heroes', 'battle', 'quests', 'stats', 'verxio'] as const).map((tab) => (
             <div
               key={tab}
               className={`flex flex-col items-center space-y-1 ${activeTab === tab ? 'text-[#14F195]' : 'text-slate-300'}`}
@@ -246,29 +371,6 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
             </div>
           ))}
         </div>
-      </div>
-
-      {/* Sound Control - Fixed positioning */}
-      <div className="sound-control" onClick={toggleMute}>
-        <span className="text-white text-lg">
-          {isMuted ? '🔇' : '🔊'}
-        </span>
-      </div>
-
-      {/* Volume Slider (Desktop) */}
-      <div className="hidden md:block fixed top-20 left-4 z-40">
-        <input
-          type="range"
-          min="0"
-          max="1"
-          step="0.1"
-          value={volume}
-          onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-          className="w-24 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
-          style={{
-            background: `linear-gradient(to right, #9945FF 0%, #9945FF ${volume * 100}%, #374151 ${volume * 100}%, #374151 100%)`
-          }}
-        />
       </div>
 
       {/* Toast Container - Only show important toasts during gameplay */}
@@ -296,6 +398,78 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
             </div>
           ))}
       </div>
+
+      {/* Onboarding Modal */}
+      {showOnboarding && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fade-in">
+          <div className="bg-gradient-to-br from-slate-900/95 to-slate-800/95 border border-slate-600/50 rounded-2xl p-8 max-w-2xl w-full transform transition-all duration-300 scale-100 animate-bounce-in">
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">🎮</div>
+              <h2 className="text-3xl font-bold text-white mb-2">Welcome to Tactical Crypto Arena!</h2>
+              <p className="text-slate-300">Your guide to becoming a legendary commander</p>
+            </div>
+
+            <div className="space-y-4 mb-6">
+              <div className="flex items-start gap-3">
+                <div className="text-[#14F195] text-xl">🏰</div>
+                <div>
+                  <h3 className="text-white font-semibold">Hero Collection</h3>
+                  <p className="text-slate-300 text-sm">Summon and customize crypto heroes. Each action costs XP!</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="text-[#9945FF] text-xl">⚔️</div>
+                <div>
+                  <h3 className="text-white font-semibold">Battle Arena</h3>
+                  <p className="text-slate-300 text-sm">Select your hero and watch automated 2D battles unfold!</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="text-[#14F195] text-xl">🎯</div>
+                <div>
+                  <h3 className="text-white font-semibold">DeFi Quests</h3>
+                  <p className="text-slate-300 text-sm">Complete missions to earn XP and level up your heroes.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="text-[#9945FF] text-xl">📊</div>
+                <div>
+                  <h3 className="text-white font-semibold">Stats & Progress</h3>
+                  <p className="text-slate-300 text-sm">Track your performance and hero development.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="text-[#14F195] text-xl">💾</div>
+                <div>
+                  <h3 className="text-white font-semibold">Save & Export</h3>
+                  <p className="text-slate-300 text-sm">Backup your progress and transfer between devices.</p>
+                </div>
+              </div>
+
+              <div className="flex items-start gap-3">
+                <div className="text-[#9945FF] text-xl">🔗</div>
+                <div>
+                  <h3 className="text-white font-semibold">Verxio Protocol</h3>
+                  <p className="text-slate-300 text-sm">On-chain loyalty passes, XP management, and tier progression.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="text-center">
+              <button
+                onClick={completeOnboarding}
+                className="solana-button px-8 py-3 text-lg"
+              >
+                Let's Battle! 🚀
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Custom Slider Styles */}
       <style jsx>{`

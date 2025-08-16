@@ -118,11 +118,25 @@ class ToastManager {
       "Data imported successfully!",
       "Hero summoned successfully!",
       "Hero created successfully!",
+      "XP deducted for hero customization:",
+      "XP deducted for hero summon:",
+      'Hero ".*" has been customized successfully!',
+      'Hero ".*" has been summoned successfully!',
     ];
 
-    return duplicatePatterns.some((pattern) =>
-      message.toLowerCase().includes(pattern.toLowerCase())
-    );
+    return duplicatePatterns.some((pattern) => {
+      // Handle regex patterns with wildcards
+      if (pattern.includes(".*")) {
+        const regex = new RegExp(pattern.replace(".*", ".*"));
+        return regex.test(message);
+      }
+      return message.toLowerCase().includes(pattern.toLowerCase());
+    });
+  }
+
+  // Enable/disable gameplay mode to reduce toast spam
+  public setGameplayMode(enabled: boolean) {
+    this.isGameplayMode = enabled;
   }
 
   public showToast(

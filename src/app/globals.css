@@ -51,11 +51,11 @@
     @apply bg-gradient-to-br from-slate-500/60 to-slate-400/40 border-slate-400/50 shadow-lg shadow-slate-500/25;
   }
 
-  /* Hover tooltips for sidebar */
+  /* Fixed Hover tooltips for sidebar - prevent overlapping */
   .nav-icon::after {
     content: attr(data-tooltip);
     position: absolute;
-    left: 100%;
+    left: 120%;
     top: 50%;
     transform: translateY(-50%);
     background: #9945ff;
@@ -68,24 +68,25 @@
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
-    margin-left: 12px;
     z-index: 1000;
     box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
+    pointer-events: none;
   }
 
   .nav-icon::before {
     content: "";
     position: absolute;
-    left: 100%;
+    left: 120%;
     top: 50%;
     transform: translateY(-50%);
     border: 6px solid transparent;
     border-right-color: #9945ff;
-    margin-left: 6px;
+    margin-left: -6px;
     opacity: 0;
     visibility: hidden;
     transition: all 0.3s ease;
     z-index: 1000;
+    pointer-events: none;
   }
 
   .nav-icon:hover::after,
@@ -188,8 +189,79 @@
     @apply fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-slate-800/70 backdrop-blur-xl border-t border-slate-700/40 z-50 md:hidden;
   }
 
+  /* Sidebar Navigation */
   .desktop-sidebar {
     @apply hidden md:flex;
+  }
+
+  .sidebar-nav {
+    @apply bg-gradient-to-b from-slate-900/40 to-slate-800/20 backdrop-blur-xl border-r border-slate-700/30;
+  }
+
+  .nav-icon {
+    @apply w-12 h-12 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 cursor-pointer relative;
+  }
+
+  .nav-icon.active {
+    @apply bg-gradient-to-br from-slate-500/60 to-slate-400/40 border-slate-400/50 shadow-lg shadow-slate-500/25;
+  }
+
+  /* Fixed Hover tooltips for sidebar - prevent overlapping */
+  .nav-icon::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    left: 120%;
+    top: 50%;
+    transform: translateY(-50%);
+    background: #9945ff;
+    color: white;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
+    pointer-events: none;
+  }
+
+  .nav-icon::before {
+    content: "";
+    position: absolute;
+    left: 120%;
+    top: 50%;
+    transform: translateY(-50%);
+    border: 6px solid transparent;
+    border-right-color: #9945ff;
+    margin-left: -6px;
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+    z-index: 1000;
+    pointer-events: none;
+  }
+
+  .nav-icon:hover::after,
+  .nav-icon:hover::before {
+    opacity: 1;
+    visibility: visible;
+  }
+
+  /* Content spacing to avoid touching navbar */
+  .content-wrapper {
+    @apply px-6 md:px-8 lg:px-12 pt-8;
+  }
+
+  /* Section spacing */
+  .game-panel {
+    @apply mb-8;
+  }
+
+  .game-panel:last-child {
+    @apply mb-0;
   }
 
   /* Animations */
@@ -383,5 +455,146 @@
 
   .battle-fire {
     @apply text-orange-500 text-2xl animate-pulse;
+  }
+}
+
+/* Smooth Transitions and Animations */
+.smooth-transition {
+  @apply transition-all duration-300 ease-in-out;
+}
+
+.hover-lift {
+  @apply transform hover:scale-105 hover:-translate-y-1 transition-all duration-300;
+}
+
+.button-press {
+  @apply active:scale-95 transition-transform duration-150;
+}
+
+.fade-in-up {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+.slide-in-right {
+  animation: slideInRight 0.5s ease-out;
+}
+
+.bounce-in {
+  animation: bounceIn 0.8s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes bounceIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.3);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.9);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Enhanced Loading States */
+.loading-pulse {
+  @apply animate-pulse bg-gradient-to-r from-[#9945FF] to-[#14F195] bg-clip-text text-transparent;
+}
+
+.loading-wave {
+  @apply flex space-x-1 justify-center items-center;
+}
+
+.loading-wave > div {
+  @apply w-2 h-2 bg-[#9945FF] rounded-full animate-bounce;
+}
+
+.loading-wave > div:nth-child(2) {
+  animation-delay: 0.1s;
+}
+
+.loading-wave > div:nth-child(3) {
+  animation-delay: 0.2s;
+}
+
+.loading-wave > div:nth-child(4) {
+  animation-delay: 0.3s;
+}
+
+/* Smooth Button Interactions */
+.solana-button {
+  @apply transform transition-all duration-300 ease-out hover:scale-105 active:scale-95;
+}
+
+.solana-button:hover {
+  @apply shadow-lg shadow-[#9945FF]/25;
+}
+
+.solana-button:active {
+  @apply transform scale-95;
+}
+
+/* Enhanced Card Interactions */
+.game-card {
+  @apply transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl;
+}
+
+.hero-card {
+  @apply transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl;
+}
+
+/* Smooth Sidebar Navigation */
+.nav-icon {
+  @apply transform transition-all duration-300 ease-out hover:scale-110;
+}
+
+.nav-icon:hover {
+  @apply shadow-lg shadow-[#9945FF]/25;
+}
+
+/* Enhanced Toast Animations */
+.toast {
+  @apply transform transition-all duration-300 ease-out;
+}
+
+.toast.slide-up {
+  animation: slideUp 0.4s ease-out;
+}
+
+@keyframes slideUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
   }
 }
