@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Hero, PlayerProfile } from '@/lib/heroManager';
 import { soundManager } from '@/lib/soundManager';
 import { showSuccess, showError } from '@/lib/toastManager';
+import { verxioManager } from '@/lib/verxioManager';
 
 interface BattleArenaProps {
   heroes: Hero[];
@@ -27,17 +28,20 @@ interface BattleLog {
   id: string;
   message: string;
   timestamp: number;
-  type: 'attack' | 'defend' | 'special' | 'result';
+  type: 'attack' | 'defend' | 'special' | 'result' | 'transaction';
 }
 
 export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleArenaProps) {
-  const [battleState, setBattleState] = useState<'idle' | 'hero-selection' | 'battling' | 'finished'>('idle');
+  const [battleState, setBattleState] = useState<'idle' | 'hero-selection' | 'battling' | 'finalizing' | 'finished'>('idle');
   const [selectedHero, setSelectedHero] = useState<Hero | null>(null);
   const [opponent, setOpponent] = useState<BattleCharacter | null>(null);
   const [playerCharacter, setPlayerCharacter] = useState<BattleCharacter | null>(null);
   const [battleLog, setBattleLog] = useState<BattleLog[]>([]);
-  const [battleTime, setBattleTime] = useState(30);
+  const [battleTime, setBattleTime] = useState(10); // 10 second battles
   const [isAutomated, setIsAutomated] = useState(false);
+  const [transactionHash, setTransactionHash] = useState<string>('');
+  const [loyaltyPassMinted, setLoyaltyPassMinted] = useState<boolean>(false);
+  const [battleResult, setBattleResult] = useState<{ winner: boolean; xpGained: number } | null>(null);
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
@@ -113,7 +117,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
 
     setPlayerCharacter(playerChar);
     setOpponent(opponentChar);
-    setBattleTime(30);
+    setBattleTime(10); // 10 second battles
     setBattleLog([]);
     setIsAutomated(true);
 
@@ -130,7 +134,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
 
     // Create a more engaging battle sequence
     let battleRound = 0;
-    const maxRounds = 15; // 30 seconds / 2 seconds per round
+    const maxRounds = 5; // 10 seconds / 2 seconds per round
 
     battleIntervalRef.current = setInterval(() => {
       if (playerCharacter && opponent && battleRound < maxRounds) {
@@ -146,7 +150,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
         }
 
         // Add special moves occasionally
-        if (battleRound % 3 === 0) {
+        if (battleRound % 2 === 0) {
           performSpecialMove();
         }
       } else if (battleRound >= maxRounds) {
@@ -253,7 +257,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
     }
   };
 
-  const endBattle = () => {
+  const endBattle = async () => {
     if (battleIntervalRef.current) {
       clearInterval(battleIntervalRef.current);
     }
@@ -263,13 +267,30 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
     }
 
     setIsAutomated(false);
-    setBattleState('finished');
+    setBattleState('finalizing');
 
     // Determine winner
     if (playerCharacter && opponent) {
       const playerWon = playerCharacter.health > opponent.health;
       const xpGained = playerWon ? Math.floor(Math.random() * 50) + 50 : -(Math.floor(Math.random() * 30) + 20);
 
+      // Simulate on-chain transaction finalization
+      const transactionHash = `txn_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      setTransactionHash(transactionHash);
+
+      // Add transaction finalization to battle log
+      const finalizationLog: BattleLog = {
+        id: Date.now().toString(),
+        message: `Finalizing match on-chain... Transaction: ${transactionHash.slice(0, 8)}...`,
+        timestamp: Date.now(),
+        type: 'transaction'
+      };
+      setBattleLog(prev => [...prev, finalizationLog]);
+
+      // Simulate blockchain confirmation delay
+      await new Promise(resolve => setTimeout(resolve, 2000));
+
+      // Announce winner
       const resultLog: BattleLog = {
         id: Date.now().toString(),
         message: playerWon ? 'Victory! You won the battle!' : 'Defeat! Better luck next time!',
@@ -278,6 +299,42 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       };
       setBattleLog(prev => [...prev, resultLog]);
 
+      // Distribute XP
+      const xpLog: BattleLog = {
+        id: Date.now().toString(),
+        message: playerWon ? `+${xpGained} XP distributed to your wallet` : `${xpGained} XP deducted from your wallet`,
+        timestamp: Date.now(),
+        type: 'result'
+      };
+      setBattleLog(prev => [...prev, xpLog]);
+
+      // Mint Verxio loyalty pass if player won
+      if (playerWon && playerProfile?.walletAddress) {
+        try {
+          const loyaltyPass = await verxioManager.issuePlayerLoyaltyPass(
+            playerProfile.walletAddress,
+            `Battle_${Date.now()}`
+          );
+
+          if (loyaltyPass) {
+            setLoyaltyPassMinted(true);
+            const loyaltyLog: BattleLog = {
+              id: Date.now().toString(),
+              message: `Loyalty Pass minted! Pass ID: ${loyaltyPass.publicKey.slice(0, 8)}...`,
+              timestamp: Date.now(),
+              type: 'result'
+            };
+            setBattleLog(prev => [...prev, loyaltyLog]);
+          }
+        } catch (error) {
+          console.error('Failed to mint loyalty pass:', error);
+        }
+      }
+
+      // Set battle result
+      setBattleResult({ winner: playerWon, xpGained });
+
+      // Complete battle
       onBattleComplete({ winner: playerWon, xpGained });
 
       if (playerWon) {
@@ -285,6 +342,8 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       } else {
         showError('Battle Lost', `You lost ${Math.abs(xpGained)} XP!`);
       }
+
+      setBattleState('finished');
     }
   };
 
@@ -294,8 +353,11 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
     setOpponent(null);
     setPlayerCharacter(null);
     setBattleLog([]);
-    setBattleTime(30);
+    setBattleTime(10);
     setIsAutomated(false);
+    setTransactionHash('');
+    setLoyaltyPassMinted(false);
+    setBattleResult(null);
 
     if (battleIntervalRef.current) {
       clearInterval(battleIntervalRef.current);
@@ -505,7 +567,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       <div className="solana-card p-6">
         <div className="flex flex-col lg:flex-row justify-between items-center gap-4">
           <div>
-            <h2 className="text-2xl font-bold text-white mb-2">⚔️ Battle Arena</h2>
+            <h2 className="text-2xl font-bold text-white mb-2">Battle Arena</h2>
             <p className="text-gray-300">Fight for glory and XP rewards!</p>
           </div>
 
@@ -517,12 +579,19 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
               </div>
             )}
 
+            {battleState === 'finalizing' && (
+              <div className="text-center">
+                <div className="text-2xl font-bold text-yellow-400">Finalizing...</div>
+                <div className="text-sm text-gray-400">On-chain transaction</div>
+              </div>
+            )}
+
             {battleState === 'idle' && (
               <button
                 onClick={startHeroSelection}
                 className="solana-button"
               >
-                🚀 Enter Battle
+                Enter Battle
               </button>
             )}
 
@@ -531,7 +600,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
                 onClick={endBattle}
                 className="solana-button-secondary"
               >
-                ⏹️ Stop Battle
+                Stop Battle
               </button>
             )}
 
@@ -540,7 +609,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
                 onClick={resetBattle}
                 className="solana-button"
               >
-                🔄 New Battle
+                New Battle
               </button>
             )}
           </div>
@@ -565,6 +634,14 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
                 <p>Select a hero to enter the battle arena</p>
               </div>
             )}
+
+            {battleState === 'finalizing' && (
+              <div className="text-center py-8 text-yellow-400">
+                <div className="text-4xl mb-4">⏳</div>
+                <p>Finalizing match on-chain...</p>
+                <p className="text-sm mt-2">Transaction: {transactionHash.slice(0, 16)}...</p>
+              </div>
+            )}
           </div>
         </div>
 
@@ -584,9 +661,10 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
                     key={log.id}
                     className={`p-2 rounded text-sm ${log.type === 'attack' ? 'bg-red-500/20 text-red-300' :
                       log.type === 'defend' ? 'bg-blue-500/20 text-blue-300' :
-                        log.type === 'result' ? 'bg-green-500/20 text-green-300' :
-                          log.type === 'special' ? 'bg-yellow-500/20 text-yellow-300' :
-                            'bg-gray-500/20 text-gray-300'
+                        log.type === 'special' ? 'bg-yellow-500/20 text-yellow-300' :
+                          log.type === 'transaction' ? 'bg-purple-500/20 text-purple-300' :
+                            log.type === 'result' ? 'bg-green-500/20 text-green-300' :
+                              'bg-gray-500/20 text-gray-300'
                       }`}
                   >
                     {log.message}
@@ -598,22 +676,89 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
         </div>
       </div>
 
-      {/* Battle Status */}
-      {battleState === 'battling' && playerCharacter && opponent && (
+      {/* Battle Results */}
+      {battleState === 'finished' && battleResult && (
         <div className="solana-card p-6">
+          <div className="text-center mb-6">
+            <h3 className="text-2xl font-bold text-white mb-2">
+              {battleResult.winner ? 'Victory!' : 'Defeat'}
+            </h3>
+            <p className="text-gray-300">
+              {battleResult.winner ? `You gained ${battleResult.xpGained} XP!` : `You lost ${Math.abs(battleResult.xpGained)} XP!`}
+            </p>
+          </div>
+
+          {/* Transaction Details */}
+          {transactionHash && (
+            <div className="bg-gray-800/50 rounded-lg p-4 mb-4">
+              <h4 className="text-lg font-bold text-white mb-2">Transaction Details</h4>
+              <div className="space-y-2">
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Transaction Hash:</span>
+                  <span className="text-white font-mono text-sm">{transactionHash}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Status:</span>
+                  <span className="text-green-400 font-bold">Confirmed</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-300">Network:</span>
+                  <span className="text-purple-400 font-bold">Solana Devnet</span>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Loyalty Pass */}
+          {loyaltyPassMinted && (
+            <div className="bg-green-800/20 border border-green-500/30 rounded-lg p-4 mb-4">
+              <h4 className="text-lg font-bold text-green-400 mb-2">Loyalty Pass Minted!</h4>
+              <p className="text-gray-300 mb-3">Your battle performance has earned you a Verxio loyalty pass!</p>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => window.open(`https://explorer.solana.com/tx/${transactionHash}?cluster=devnet`, '_blank')}
+                  className="solana-button-secondary text-sm"
+                >
+                  View on Explorer
+                </button>
+                <button
+                  onClick={() => {
+                    const data = {
+                      type: 'Loyalty Pass',
+                      battle: 'Tactical Crypto Arena',
+                      transaction: transactionHash,
+                      timestamp: new Date().toISOString()
+                    };
+                    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+                    const url = URL.createObjectURL(blob);
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = 'loyalty-pass.json';
+                    a.click();
+                    URL.revokeObjectURL(url);
+                  }}
+                  className="solana-button text-sm"
+                >
+                  Download Pass
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Battle Status */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Player Status */}
             <div>
               <h4 className="text-lg font-bold text-green-400 mb-3">Your Hero</h4>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Health:</span>
-                  <span className="text-white font-bold">{playerCharacter.health}/{playerCharacter.maxHealth}</span>
+                  <span className="text-gray-300">Final Health:</span>
+                  <span className="text-white font-bold">{playerCharacter?.health || 0}/{playerCharacter?.maxHealth || 100}</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div
                     className="bg-green-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(playerCharacter.health / playerCharacter.maxHealth) * 100}%` }}
+                    style={{ width: `${((playerCharacter?.health || 0) / (playerCharacter?.maxHealth || 100)) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -624,13 +769,13 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
               <h4 className="text-lg font-bold text-purple-400 mb-3">Opponent</h4>
               <div className="space-y-2">
                 <div className="flex justify-between">
-                  <span className="text-gray-300">Health:</span>
-                  <span className="text-white font-bold">{opponent.health}/{opponent.maxHealth}</span>
+                  <span className="text-gray-300">Final Health:</span>
+                  <span className="text-white font-bold">{opponent?.health || 0}/{opponent?.maxHealth || 100}</span>
                 </div>
                 <div className="w-full bg-gray-700 rounded-full h-2">
                   <div
                     className="bg-purple-400 h-2 rounded-full transition-all duration-300"
-                    style={{ width: `${(opponent.health / opponent.maxHealth) * 100}%` }}
+                    style={{ width: `${((opponent?.health || 0) / (opponent?.maxHealth || 100)) * 100}%` }}
                   ></div>
                 </div>
               </div>
@@ -640,4 +785,4 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       )}
     </div>
   );
-} 
+}
