@@ -1,7 +1,7 @@
 import createEdgeClient from "@honeycomb-protocol/edge-client";
 import { sendClientTransactions } from "@honeycomb-protocol/edge-client/client/walletHelpers";
 import { storageManager } from "./storage";
-import toast from "react-hot-toast";
+import { showSuccess, showError, showWarning } from "./toastManager";
 
 // Use Honeynet for testing (unlimited SOL available)
 const API_URL = "https://edge.test.honeycombprotocol.com/";
@@ -71,7 +71,7 @@ export class HeroManager {
         walletAddress
       );
       if (existingProfile) {
-        toast.success("Existing profile loaded!");
+        showSuccess("Profile Loaded", "Existing profile loaded successfully!");
         return existingProfile;
       }
 
@@ -106,17 +106,16 @@ export class HeroManager {
           });
 
         console.log("Honeycomb profile creation transaction:", txResponse);
-        toast.success("Profile created on blockchain!");
+        showSuccess(
+          "Profile Created",
+          "Profile created on blockchain successfully!"
+        );
       } catch (error) {
         console.error("Failed to create profile on Honeycomb:", error);
-        toast("Profile created locally (blockchain unavailable)", {
-          icon: "⚠️",
-          style: {
-            background: "#92400e",
-            color: "#fef3c7",
-            border: "1px solid #f59e0b",
-          },
-        });
+        showWarning(
+          "Profile Created Locally",
+          "Profile created locally (blockchain unavailable)"
+        );
       }
 
       // Save to local storage
@@ -125,7 +124,7 @@ export class HeroManager {
       return newProfile;
     } catch (error) {
       console.error("Error creating player profile:", error);
-      toast.error("Failed to create player profile");
+      showError("Profile Creation Failed", "Failed to create player profile");
       throw error;
     }
   }
@@ -137,7 +136,10 @@ export class HeroManager {
       // Try to load from storage first
       const storedHeroes = await storageManager.loadHeroes(walletAddress);
       if (storedHeroes.length > 0) {
-        toast.success("Heroes loaded from storage");
+        showSuccess(
+          "Heroes Loaded",
+          "Heroes loaded from storage successfully!"
+        );
         return storedHeroes;
       }
 
@@ -147,11 +149,11 @@ export class HeroManager {
       // Save starter heroes to storage
       await storageManager.saveHeroes(walletAddress, starterHeroes);
 
-      toast.success("Starter heroes assigned!");
+      showSuccess("Starter Heroes", "Starter heroes assigned successfully!");
       return starterHeroes;
     } catch (error) {
       console.error("Error fetching heroes:", error);
-      toast.error("Failed to load heroes");
+      showError("Hero Loading Failed", "Failed to load heroes");
       return this.getStarterHeroes();
     }
   }
@@ -374,11 +376,14 @@ export class HeroManager {
       // Save updated hero collection
       await storageManager.saveHeroes(walletAddress, updatedHeroes);
 
-      toast.success(`New hero "${newHero.name}" created!`);
+      showSuccess(
+        "Hero Created",
+        `New hero "${newHero.name}" created successfully!`
+      );
       return newHero;
     } catch (error) {
       console.error("Error creating hero:", error);
-      toast.error("Failed to create hero");
+      showError("Hero Creation Failed", "Failed to create hero");
       throw error;
     }
   }
@@ -415,11 +420,11 @@ export class HeroManager {
       // Save updated heroes
       await storageManager.saveHeroes(walletAddress, currentHeroes);
 
-      toast.success("Hero traits updated!");
+      showSuccess("Hero Updated", "Hero traits updated successfully!");
       return hero;
     } catch (error) {
       console.error("Error updating hero traits:", error);
-      toast.error("Failed to update hero traits");
+      showError("Trait Update Failed", "Failed to update hero traits");
       throw error;
     }
   }
@@ -452,17 +457,23 @@ export class HeroManager {
       const newLevel = Math.floor(updatedProfile.xp / 100) + 1;
       if (newLevel > updatedProfile.level) {
         updatedProfile.level = newLevel;
-        toast.success(`Level up! You are now level ${newLevel}!`);
+        showSuccess(
+          "Level Up!",
+          `Congratulations! You are now level ${newLevel}!`
+        );
       }
 
       // Save updated profile
       await storageManager.savePlayerProfile(updatedProfile);
 
-      toast.success(`Quest completed! +${xpGained} XP gained`);
+      showSuccess(
+        "Quest Completed",
+        `Quest completed successfully! +${xpGained} XP gained`
+      );
       return { success: true, xpGained };
     } catch (error) {
       console.error("Error completing quest:", error);
-      toast.error("Failed to complete quest");
+      showError("Quest Completion Failed", "Failed to complete quest");
       return { success: false, xpGained: 0 };
     }
   }
@@ -490,11 +501,11 @@ export class HeroManager {
       // Save updated profile
       await storageManager.savePlayerProfile(updatedProfile);
 
-      toast.success("Player stats updated!");
+      showSuccess("Stats Updated", "Player stats updated successfully!");
       return updatedProfile;
     } catch (error) {
       console.error("Error updating player stats:", error);
-      toast.error("Failed to update player stats");
+      showError("Stats Update Failed", "Failed to update player stats");
       throw error;
     }
   }
@@ -523,11 +534,11 @@ export class HeroManager {
         storageManager.saveHeroes(walletAddress, heroes),
       ]);
 
-      toast.success("Game progress saved!");
+      showSuccess("Game Saved", "Game progress saved successfully!");
       return true;
     } catch (error) {
       console.error("Failed to save game data:", error);
-      toast.error("Failed to save game progress");
+      showError("Save Failed", "Failed to save game progress");
       return false;
     }
   }
@@ -545,7 +556,7 @@ export class HeroManager {
       return { profile, heroes };
     } catch (error) {
       console.error("Failed to load game data:", error);
-      toast.error("Failed to load game progress");
+      showError("Load Failed", "Failed to load game progress");
       return { profile: null, heroes: [] };
     }
   }
