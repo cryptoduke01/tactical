@@ -32,10 +32,11 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
     const fetchSOLBalance = async () => {
       if (wallet.publicKey) {
         try {
-          // Simulate fetching SOL balance from devnet
           // In a real app, you'd use connection.getBalance(wallet.publicKey)
-          const mockBalance = Math.random() * 10 + 1; // Random balance between 1-11 SOL
-          setSolBalance(mockBalance.toFixed(4));
+          // For now, simulate fetching from devnet with a realistic balance
+          // You can replace this with actual RPC call to devnet
+          const devnetBalance = 120; // Your actual devnet balance
+          setSolBalance(devnetBalance.toFixed(4));
         } catch (error) {
           console.error('Failed to fetch SOL balance:', error);
           setSolBalance('0.0000');

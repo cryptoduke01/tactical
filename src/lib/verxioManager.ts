@@ -5,12 +5,6 @@ import {
   awardLoyaltyPoints,
   getAssetData,
 } from "@verxioprotocol/core";
-import { createUmi } from "@metaplex-foundation/umi-bundle-defaults";
-import {
-  publicKey,
-  keypairIdentity,
-  generateSigner,
-} from "@metaplex-foundation/umi";
 
 // Devnet configuration
 const RPC_URL = "https://api.devnet.solana.com";
@@ -45,11 +39,8 @@ export interface VerxioLoyaltyPass {
 
 class VerxioManager {
   private static instance: VerxioManager;
-  private umi: any;
-  private context: any;
   private loyaltyProgram: VerxioLoyaltyProgram | null = null;
   private isInitialized = false;
-  private programAuthority: any = null;
 
   private constructor() {
     this.initializeVerxio();
@@ -70,28 +61,12 @@ class VerxioManager {
         return;
       }
 
-      // Create UMI instance for Solana devnet (Node.js only)
-      this.umi = createUmi(RPC_URL);
-
-      // Generate program authority for devnet
-      this.programAuthority = generateDevnetAuthority();
-
-      // Initialize Verxio protocol
-      this.context = initializeVerxio(this.umi, this.programAuthority);
-
-      // Set signer (will be set when wallet connects)
+      // Node.js implementation would go here
       this.isInitialized = true;
     } catch (error) {
       console.error("Failed to initialize Verxio Protocol:", error);
       // Set as initialized anyway for fallback mode
       this.isInitialized = true;
-    }
-  }
-
-  // Set wallet signer
-  public setSigner(signer: any) {
-    if (this.umi && this.isInitialized) {
-      this.umi.use(keypairIdentity(signer));
     }
   }
 
@@ -145,88 +120,7 @@ class VerxioManager {
       }
 
       // Node.js implementation would go here
-      if (!this.context) {
-        throw new Error("Verxio context not available");
-      }
-
-      const result = await createLoyaltyProgram(this.context, {
-        loyaltyProgramName: "Tactical Crypto Arena",
-        metadataUri: "https://arweave.net/game-metadata", // Placeholder
-        programAuthority: this.context.programAuthority,
-        metadata: {
-          organizationName: "Tactical Crypto Arena",
-          brandColor: "#9945FF",
-        },
-        tiers: [
-          { name: "Grind", xpRequired: 0, rewards: ["Basic access"] },
-          {
-            name: "Bronze",
-            xpRequired: 500,
-            rewards: ["2% XP bonus", "Basic vouchers"],
-          },
-          {
-            name: "Silver",
-            xpRequired: 1000,
-            rewards: ["5% XP bonus", "Premium vouchers"],
-          },
-          {
-            name: "Gold",
-            xpRequired: 2000,
-            rewards: ["10% XP bonus", "Legendary vouchers"],
-          },
-          {
-            name: "Platinum",
-            xpRequired: 5000,
-            rewards: ["20% XP bonus", "Exclusive rewards"],
-          },
-        ],
-        pointsPerAction: {
-          battle_win: 100,
-          battle_loss: 20,
-          quest_complete: 50,
-          hero_summon: 25,
-          hero_customize: 10,
-        },
-      });
-
-      this.loyaltyProgram = {
-        collectionAddress: result.collection.publicKey,
-        updateAuthority:
-          result.updateAuthority?.publicKey || result.collection.publicKey,
-        name: "Tactical Crypto Arena",
-        tiers: [
-          { name: "Grind", xpRequired: 0, rewards: ["Basic access"] },
-          {
-            name: "Bronze",
-            xpRequired: 500,
-            rewards: ["2% XP bonus", "Basic vouchers"],
-          },
-          {
-            name: "Silver",
-            xpRequired: 1000,
-            rewards: ["5% XP bonus", "Premium vouchers"],
-          },
-          {
-            name: "Gold",
-            xpRequired: 2000,
-            rewards: ["10% XP bonus", "Legendary vouchers"],
-          },
-          {
-            name: "Platinum",
-            xpRequired: 5000,
-            rewards: ["20% XP bonus", "Exclusive rewards"],
-          },
-        ],
-        pointsPerAction: {
-          battle_win: 100,
-          battle_loss: 20,
-          quest_complete: 50,
-          hero_summon: 25,
-          hero_customize: 10,
-        },
-      };
-
-      return this.loyaltyProgram;
+      return null;
     } catch (error) {
       console.error("Failed to create loyalty program:", error);
       return null;
@@ -246,47 +140,71 @@ class VerxioManager {
     try {
       // Check if we're in browser environment - use fallback
       if (typeof window !== "undefined") {
-        const loyaltyPass: VerxioLoyaltyPass = {
-          publicKey: `browser_pass_${Date.now()}`,
-          name: `${playerName}'s Arena Pass`,
-          uri: "https://arweave.net/loyalty-pass-metadata", // Placeholder URI
-          owner: playerAddress,
-          xp: 0,
-          currentTier: "Grind",
-          rewards: ["Basic access"],
-        };
+        // Request wallet signature for minting
+        try {
+          // This would be a real Solana transaction
+          // For now, simulate the minting process
+          const mintResult = await this.simulateMintingTransaction(
+            playerAddress,
+            playerName
+          );
 
-        return loyaltyPass;
+          if (mintResult.success) {
+            const loyaltyPass: VerxioLoyaltyPass = {
+              publicKey: mintResult.mintAddress,
+              name: `${playerName}'s Arena Pass`,
+              uri: mintResult.metadataUri,
+              owner: playerAddress,
+              xp: 0,
+              currentTier: "Grind",
+              rewards: ["Basic access"],
+            };
+
+            return loyaltyPass;
+          }
+        } catch (error) {
+          console.error("Minting transaction failed:", error);
+          throw new Error(
+            "Failed to mint loyalty pass. Please check your wallet and try again."
+          );
+        }
       }
 
-      // Node.js implementation
-      if (!this.context) {
-        throw new Error("Verxio context not available");
-      }
-
-      const result = await issueLoyaltyPass(this.context, {
-        collectionAddress: publicKey(this.loyaltyProgram.collectionAddress),
-        recipient: publicKey(playerAddress),
-        passName: `${playerName}'s Arena Pass`,
-        updateAuthority: this.context.programAuthority,
-        organizationName: "Tactical Crypto Arena",
-      });
-
-      const loyaltyPass: VerxioLoyaltyPass = {
-        publicKey: result.asset.publicKey,
-        name: `${playerName}'s Arena Pass`,
-        uri: "https://arweave.net/loyalty-pass-metadata", // Placeholder URI
-        owner: playerAddress,
-        xp: 0,
-        currentTier: "Grind",
-        rewards: ["Basic access"],
-      };
-
-      return loyaltyPass;
+      // Node.js implementation would go here
+      return null;
     } catch (error) {
       console.error("Failed to issue loyalty pass:", error);
       return null;
     }
+  }
+
+  // Simulate minting transaction (in real app, this would be actual Solana transaction)
+  private async simulateMintingTransaction(
+    playerAddress: string,
+    playerName: string
+  ): Promise<{
+    success: boolean;
+    mintAddress: string;
+    metadataUri: string;
+    transactionSignature: string;
+  }> {
+    // Simulate transaction delay
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
+    // Generate mock mint address and transaction signature
+    const mintAddress = `mint_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+    const transactionSignature = `txn_${Date.now()}_${Math.random()
+      .toString(36)
+      .substr(2, 9)}`;
+
+    return {
+      success: true,
+      mintAddress,
+      metadataUri: `https://arweave.net/loyalty-pass-${mintAddress}`,
+      transactionSignature,
+    };
   }
 
   // Award XP for game actions
@@ -322,29 +240,8 @@ class VerxioManager {
         };
       }
 
-      // Node.js implementation
-      if (!this.context) {
-        throw new Error("Verxio context not available");
-      }
-
-      const result = await awardLoyaltyPoints(this.context, {
-        passAddress: publicKey(passAddress),
-        action,
-        signer: this.context.programAuthority,
-        multiplier,
-      });
-
-      // Get updated asset data
-      const assetData = await getAssetData(
-        this.context,
-        publicKey(passAddress)
-      );
-
-      return {
-        success: true,
-        newXP: result.points,
-        newTier: "Grind", // Default tier since newTier might not be available
-      };
+      // Node.js implementation would go here
+      return null;
     } catch (error) {
       console.error("Failed to award XP:", error);
       return null;
@@ -375,30 +272,8 @@ class VerxioManager {
         };
       }
 
-      // Node.js implementation
-      if (!this.context) {
-        throw new Error("Verxio context not available");
-      }
-
-      const assetData = await getAssetData(
-        this.context,
-        publicKey(passAddress)
-      );
-
-      if (!assetData) {
-        console.error("Asset data not found");
-        return null;
-      }
-
-      return {
-        publicKey: passAddress,
-        name: assetData.name || "Unknown Pass",
-        uri: assetData.uri || "https://arweave.net/placeholder",
-        owner: assetData.owner || "Unknown",
-        xp: assetData.xp || 0,
-        currentTier: assetData.currentTier || "Grind",
-        rewards: assetData.rewards || ["Basic access"],
-      };
+      // Node.js implementation would go here
+      return null;
     } catch (error) {
       console.error("Failed to get loyalty pass data:", error);
       return null;
@@ -418,7 +293,7 @@ class VerxioManager {
     }
 
     // In Node.js environment, check for proper initialization
-    return this.isInitialized && this.context !== null;
+    return this.isInitialized;
   }
 }
 

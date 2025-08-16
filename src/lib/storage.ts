@@ -1,5 +1,5 @@
 import { PlayerProfile, Hero } from "./heroManager";
-import toast from "react-hot-toast";
+import { showSuccess, showError } from "./toastManager";
 
 // Storage keys
 const STORAGE_KEYS = {
@@ -40,8 +40,10 @@ export class StorageManager {
       const key = `${STORAGE_KEYS.PLAYER_PROFILE}_${profile.walletAddress}`;
       localStorage.setItem(key, JSON.stringify(profile));
       localStorage.setItem(STORAGE_KEYS.LAST_SAVE, new Date().toISOString());
+      showSuccess("Profile Saved", "Player profile saved successfully!");
     } catch (error) {
       console.error("Failed to save player profile:", error);
+      showError("Save Failed", "Failed to save player profile");
     }
   }
 
@@ -66,8 +68,10 @@ export class StorageManager {
     try {
       const key = `${STORAGE_KEYS.HEROES}_${walletAddress}`;
       localStorage.setItem(key, JSON.stringify(heroes));
+      showSuccess("Heroes Saved", "Hero collection saved successfully!");
     } catch (error) {
       console.error("Failed to save heroes:", error);
+      showError("Save Failed", "Failed to save heroes");
     }
   }
 
@@ -92,8 +96,10 @@ export class StorageManager {
     try {
       const key = `${STORAGE_KEYS.GAME_STATE}_${walletAddress}`;
       localStorage.setItem(key, JSON.stringify(gameState));
+      showSuccess("Game Saved", "Game state saved successfully!");
     } catch (error) {
       console.error("Failed to save game state:", error);
+      showError("Save Failed", "Failed to save game state");
     }
   }
 
@@ -125,10 +131,10 @@ export class StorageManager {
       localStorage.removeItem(gameStateKey);
       localStorage.removeItem(STORAGE_KEYS.LAST_SAVE);
 
-      toast.success("Game data cleared");
+      showSuccess("Data Cleared", "Game data cleared successfully");
     } catch (error) {
       console.error("Failed to clear data:", error);
-      toast.error("Failed to clear data");
+      showError("Clear Failed", "Failed to clear game data");
     }
   }
 
@@ -143,54 +149,6 @@ export class StorageManager {
     const profileKey = `${STORAGE_KEYS.PLAYER_PROFILE}_${walletAddress}`;
     const profile = localStorage.getItem(profileKey);
     return profile !== null;
-  }
-
-  // Honeycomb integration methods (stubbed for now)
-  private async saveToHoneycomb(profile: PlayerProfile): Promise<void> {
-    // This would require actual Honeycomb blockchain transaction
-    // For now, we'll simulate the process
-
-    // Simulate blockchain delay
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-
-    // In production, this would:
-    // 1. Create a transaction to update the user profile
-    // 2. Send it to the wallet for signing
-    // 3. Submit to Solana network
-    // 4. Wait for confirmation
-  }
-
-  private async loadFromHoneycomb(
-    walletAddress: string
-  ): Promise<PlayerProfile | null> {
-    // This would query the Honeycomb blockchain
-
-    // Simulate blockchain query delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
-
-    // In production, this would:
-    // 1. Query Honeycomb for user profile
-    // 2. Parse blockchain data
-    // 3. Return profile if found
-
-    return null; // No profile found on blockchain
-  }
-
-  private async saveHeroesToHoneycomb(
-    walletAddress: string,
-    heroes: Hero[]
-  ): Promise<void> {
-    // Simulate blockchain transaction
-    await new Promise((resolve) => setTimeout(resolve, 1500));
-  }
-
-  private async loadHeroesFromHoneycomb(
-    walletAddress: string
-  ): Promise<Hero[]> {
-    // Simulate blockchain query
-    await new Promise((resolve) => setTimeout(resolve, 800));
-
-    return []; // No heroes found on blockchain
   }
 
   // Export data for backup
@@ -235,11 +193,11 @@ export class StorageManager {
         localStorage.setItem(gameStateKey, data.gameState);
       }
 
-      toast.success("Backup data imported successfully!");
+      showSuccess("Data Imported", "Backup data imported successfully!");
       return true;
     } catch (error) {
       console.error("Failed to import backup data:", error);
-      toast.error("Failed to import backup data");
+      showError("Import Failed", "Failed to import backup data");
       return false;
     }
   }

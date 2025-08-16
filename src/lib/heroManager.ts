@@ -240,11 +240,17 @@ export class HeroManager {
         return storedHeroes;
       }
 
-      // If no stored heroes, return empty array
-      return [];
+      // If no stored heroes, return starter heroes (Solana founders)
+      const starterHeroes = this.getStarterHeroes();
+
+      // Save starter heroes to storage
+      await this.savePlayerHeroes(walletAddress, starterHeroes);
+
+      return starterHeroes;
     } catch (error) {
       console.error("Failed to get player heroes:", error);
-      return [];
+      // Return starter heroes as fallback
+      return this.getStarterHeroes();
     }
   }
 

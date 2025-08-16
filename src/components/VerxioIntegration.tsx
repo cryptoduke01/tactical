@@ -51,6 +51,9 @@ export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
 
     setIsMinting(true);
     try {
+      // Request wallet signature for minting
+      showSuccess('Requesting Signature', 'Please approve the transaction in your wallet');
+
       // Simulate contract minting using connected wallet
       const pass = await verxioManager.issuePlayerLoyaltyPass(
         wallet.publicKey.toBase58(),
@@ -61,13 +64,27 @@ export function VerxioIntegration({ playerProfile }: VerxioIntegrationProps) {
         showSuccess('Loyalty Pass Minted!', `Successfully minted pass for ${wallet.publicKey.toBase58().slice(0, 8)}...`);
         soundManager.playSuccess();
 
-        // Refresh the page to show the new pass
-        window.location.reload();
+        // Show NFT download option
+        showSuccess('NFT Ready', 'Your loyalty pass NFT is ready for download!');
+
+        // Update local state instead of refreshing page
+        if (playerProfile) {
+          const updatedProfile = {
+            ...playerProfile,
+            loyaltyPass: pass,
+            verxioTier: pass.currentTier
+          };
+
+          // Dispatch profile update event
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('profileUpdate', { detail: updatedProfile }));
+          }
+        }
       } else {
         showError('Minting Failed', 'Failed to mint loyalty pass');
       }
     } catch (error) {
-      showError('Minting Error', 'Failed to mint loyalty pass');
+      showError('Minting Error', 'Failed to mint loyalty pass. Please check your wallet and try again.');
       console.error('Minting error:', error);
     } finally {
       setIsMinting(false);

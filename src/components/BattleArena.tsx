@@ -128,26 +128,64 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
       clearInterval(battleIntervalRef.current);
     }
 
+    // Create a more engaging battle sequence
+    let battleRound = 0;
+    const maxRounds = 15; // 30 seconds / 2 seconds per round
+
     battleIntervalRef.current = setInterval(() => {
-      if (playerCharacter && opponent) {
-        // Random actions for both characters
-        if (Math.random() > 0.5) {
+      if (playerCharacter && opponent && battleRound < maxRounds) {
+        battleRound++;
+
+        // More dynamic battle actions
+        if (Math.random() > 0.6) {
           performAttack('player');
+        } else if (Math.random() > 0.5) {
+          performAttack('opponent');
         } else {
-          performDefend('player');
+          performDefend(Math.random() > 0.5 ? 'player' : 'opponent');
         }
 
-        setTimeout(() => {
-          if (opponent && playerCharacter) {
-            if (Math.random() > 0.5) {
-              performAttack('opponent');
-            } else {
-              performDefend('opponent');
-            }
-          }
-        }, 500);
+        // Add special moves occasionally
+        if (battleRound % 3 === 0) {
+          performSpecialMove();
+        }
+      } else if (battleRound >= maxRounds) {
+        endBattle();
       }
     }, 2000); // Action every 2 seconds
+  };
+
+  const performSpecialMove = () => {
+    if (!playerCharacter || !opponent) return;
+
+    const specialMoves = [
+      { name: 'Lightning Strike', damage: 25, type: 'special' },
+      { name: 'Shield Bash', damage: 20, type: 'special' },
+      { name: 'Energy Blast', damage: 30, type: 'special' },
+      { name: 'Counter Attack', damage: 22, type: 'special' }
+    ];
+
+    const move = specialMoves[Math.floor(Math.random() * specialMoves.length)];
+    const attacker = Math.random() > 0.5 ? 'player' : 'opponent';
+    const defender = attacker === 'player' ? 'opponent' : 'player';
+
+    // Apply special move damage
+    if (attacker === 'player') {
+      setOpponent(prev => prev ? { ...prev, health: Math.max(0, prev.health - move.damage) } : null);
+    } else {
+      setPlayerCharacter(prev => prev ? { ...prev, health: Math.max(0, prev.health - move.damage) } : null);
+    }
+
+    // Add special move to battle log
+    const logEntry: BattleLog = {
+      id: Date.now().toString(),
+      message: `${attacker === 'player' ? playerCharacter.name : opponent.name} uses ${move.name} for ${move.damage} damage!`,
+      timestamp: Date.now(),
+      type: 'special'
+    };
+    setBattleLog(prev => [...prev, logEntry]);
+
+    soundManager.playBattle();
   };
 
   const performAttack = (attacker: 'player' | 'opponent') => {
@@ -547,7 +585,8 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
                     className={`p-2 rounded text-sm ${log.type === 'attack' ? 'bg-red-500/20 text-red-300' :
                       log.type === 'defend' ? 'bg-blue-500/20 text-blue-300' :
                         log.type === 'result' ? 'bg-green-500/20 text-green-300' :
-                          'bg-gray-500/20 text-gray-300'
+                          log.type === 'special' ? 'bg-yellow-500/20 text-yellow-300' :
+                            'bg-gray-500/20 text-gray-300'
                       }`}
                   >
                     {log.message}
