@@ -1,11 +1,3 @@
-import {
-  initializeVerxio,
-  createLoyaltyProgram,
-  issueLoyaltyPass,
-  awardLoyaltyPoints,
-  getAssetData,
-} from "@verxioprotocol/core";
-
 // Devnet configuration
 const RPC_URL = "https://api.devnet.solana.com";
 

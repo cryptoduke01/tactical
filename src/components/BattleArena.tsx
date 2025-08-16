@@ -45,7 +45,7 @@ export function BattleArena({ heroes, playerProfile, onBattleComplete }: BattleA
 
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const animationFrameRef = useRef<number | undefined>(undefined);
-  const battleIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const battleIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Initialize battle when hero is selected
   useEffect(() => {
