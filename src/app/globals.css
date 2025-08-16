@@ -103,6 +103,11 @@
     @apply transform scale-105 border-slate-500/60 shadow-slate-500/20;
   }
 
+  /* Sidebar Navigation */
+  .desktop-sidebar {
+    @apply hidden md:flex;
+  }
+
   .sidebar-nav {
     @apply bg-gradient-to-b from-slate-900/40 to-slate-800/20 backdrop-blur-xl border-r border-slate-700/30;
   }
@@ -251,67 +256,6 @@
   /* Responsive Design */
   .mobile-nav {
     @apply fixed bottom-0 left-0 right-0 bg-gradient-to-t from-slate-900/90 to-slate-800/70 backdrop-blur-xl border-t border-slate-700/40 z-50 md:hidden;
-  }
-
-  /* Sidebar Navigation */
-  .desktop-sidebar {
-    @apply hidden md:flex;
-  }
-
-  .sidebar-nav {
-    @apply bg-gradient-to-b from-slate-900/40 to-slate-800/20 backdrop-blur-xl border-r border-slate-700/30;
-  }
-
-  .nav-icon {
-    @apply w-12 h-12 rounded-full bg-gradient-to-br from-slate-700/50 to-slate-600/30 border border-slate-600/40 flex items-center justify-center text-white hover:from-slate-600/50 hover:to-slate-500/30 hover:border-slate-500/50 transition-all duration-300 cursor-pointer relative;
-  }
-
-  .nav-icon.active {
-    @apply bg-gradient-to-br from-slate-500/60 to-slate-400/40 border-slate-400/50 shadow-lg shadow-slate-500/25;
-  }
-
-  /* Fixed Hover tooltips for sidebar - prevent overlapping */
-  .nav-icon::after {
-    content: attr(data-tooltip);
-    position: absolute;
-    left: 120%;
-    top: 50%;
-    transform: translateY(-50%);
-    background: #9945ff;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 8px;
-    font-size: 14px;
-    font-weight: 500;
-    white-space: nowrap;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    box-shadow: 0 4px 12px rgba(153, 69, 255, 0.3);
-    pointer-events: none;
-  }
-
-  .nav-icon::before {
-    content: "";
-    position: absolute;
-    left: 120%;
-    top: 50%;
-    transform: translateY(-50%);
-    border: 6px solid transparent;
-    border-right-color: #9945ff;
-    margin-left: -6px;
-    opacity: 0;
-    visibility: hidden;
-    transition: all 0.3s ease;
-    z-index: 1000;
-    pointer-events: none;
-  }
-
-  .nav-icon:hover::after,
-  .nav-icon:hover::before {
-    opacity: 1;
-    visibility: visible;
   }
 
   /* Content spacing to avoid touching navbar */
@@ -527,10 +471,6 @@
     @apply w-full max-w-none px-0;
   }
 
-  .content-wrapper {
-    @apply px-6 md:px-8 lg:px-12;
-  }
-
   /* 2D Battle Arena */
   .battle-arena-2d {
     @apply bg-gradient-to-b from-slate-900 to-slate-800 rounded-2xl border border-slate-600/40 overflow-hidden relative;
@@ -651,42 +591,7 @@
   animation-delay: 0.3s;
 }
 
-/* Smooth Button Interactions */
-.solana-button {
-  @apply transform transition-all duration-300 ease-out hover:scale-105 active:scale-95;
-}
-
-.solana-button:hover {
-  @apply shadow-lg shadow-[#9945FF]/25;
-}
-
-.solana-button:active {
-  @apply transform scale-95;
-}
-
-/* Enhanced Card Interactions */
-.game-card {
-  @apply transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl;
-}
-
-.hero-card {
-  @apply transform transition-all duration-300 ease-out hover:scale-105 hover:shadow-xl;
-}
-
-/* Smooth Sidebar Navigation */
-.nav-icon {
-  @apply transform transition-all duration-300 ease-out hover:scale-110;
-}
-
-.nav-icon:hover {
-  @apply shadow-lg shadow-[#9945FF]/25;
-}
-
 /* Enhanced Toast Animations */
-.toast {
-  @apply transform transition-all duration-300 ease-out;
-}
-
 .toast.slide-up {
   animation: slideUp 0.4s ease-out;
 }
