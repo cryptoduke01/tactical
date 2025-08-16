@@ -15,6 +15,7 @@ class ToastManager {
   private listeners: ((toasts: ToastMessage[]) => void)[] = [];
   private isInitialized = false;
   private originalConsole: any = {};
+  private isGameplayMode = false;
 
   private constructor() {
     this.initializeConsoleCapture();
@@ -38,25 +39,34 @@ class ToastManager {
     this.originalConsole.error = console.error;
     this.originalConsole.debug = console.debug;
 
-    // Capture console.log
+    // Capture console.log - filter out unnecessary messages
     console.log = (...args) => {
       this.originalConsole.log.apply(console, args);
-      this.showToast("info", "Console Log", args.join(" "));
+      const message = args.join(" ");
+
+      // Filter out unnecessary logs during gameplay
+      if (!this.shouldShowToast(message)) return;
+
+      this.showToast("info", "Console Log", message);
     };
 
-    // Capture console.info
+    // Capture console.info - filter out unnecessary messages
     console.info = (...args) => {
       this.originalConsole.info.apply(console, args);
-      this.showToast("info", "Info", args.join(" "));
+      const message = args.join(" ");
+
+      if (!this.shouldShowToast(message)) return;
+
+      this.showToast("info", "Info", message);
     };
 
-    // Capture console.warn
+    // Capture console.warn - always show warnings
     console.warn = (...args) => {
       this.originalConsole.warn.apply(console, args);
       this.showToast("warning", "Warning", args.join(" "));
     };
 
-    // Capture console.error
+    // Capture console.error - always show errors
     console.error = (...args) => {
       this.originalConsole.error.apply(console, args);
       this.showToast("error", "Error", args.join(" "));
@@ -67,11 +77,52 @@ class ToastManager {
       this.showToast("success", "Success", args.join(" "));
     };
 
-    // Capture console.debug
+    // Capture console.debug - filter out unnecessary messages
     console.debug = (...args) => {
       this.originalConsole.debug.apply(console, args);
-      this.showToast("info", "Debug", args.join(" "));
+      const message = args.join(" ");
+
+      if (!this.shouldShowToast(message)) return;
+
+      this.showToast("info", "Debug", message);
     };
+  }
+
+  // Filter out unnecessary console messages during gameplay
+  private shouldShowToast(message: string): boolean {
+    if (!this.isGameplayMode) return true;
+
+    // Filter out common game loop messages
+    const filteredMessages = [
+      "3D Battle scene ready",
+      "Battle scene ready",
+      "Animation frame",
+      "Rendering",
+      "Update loop",
+      "Game tick",
+      "Frame rate",
+      "Performance",
+    ];
+
+    return !filteredMessages.some((filter) =>
+      message.toLowerCase().includes(filter.toLowerCase())
+    );
+  }
+
+  // Filter out duplicate action messages
+  private isDuplicateAction(message: string): boolean {
+    const duplicatePatterns = [
+      "Progress saved successfully!",
+      "Progress saved!",
+      "Data exported successfully!",
+      "Data imported successfully!",
+      "Hero summoned successfully!",
+      "Hero created successfully!",
+    ];
+
+    return duplicatePatterns.some((pattern) =>
+      message.toLowerCase().includes(pattern.toLowerCase())
+    );
   }
 
   public showToast(
@@ -81,6 +132,14 @@ class ToastManager {
     duration: number = 5000
   ) {
     try {
+      // Check if this is a duplicate action message
+      if (this.isDuplicateAction(message)) {
+        // Only show the main action toast, not console duplicates
+        if (title === "Console Log" || title === "Info") {
+          return null;
+        }
+      }
+
       const toast: ToastMessage = {
         id: `toast-${Date.now()}-${Math.random()}`,
         type,
@@ -208,3 +267,4 @@ export const showSuccess = toastManager.success.bind(toastManager);
 export const showError = toastManager.error.bind(toastManager);
 export const showWarning = toastManager.warning.bind(toastManager);
 export const showInfo = toastManager.info.bind(toastManager);
+export const setGameplayMode = toastManager.setGameplayMode.bind(toastManager);

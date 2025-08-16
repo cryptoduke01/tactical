@@ -27,8 +27,8 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
 
   const getRarityColor = (rarity: Hero['rarity']) => {
     switch (rarity) {
-      case 'legendary': return 'text-yellow-400 border-yellow-400/50';
-      case 'epic': return 'text-purple-400 border-purple-400/50';
+      case 'legendary': return 'text-[#9945FF] border-[#9945FF]/50';
+      case 'epic': return 'text-[#14F195] border-[#14F195]/50';
       case 'rare': return 'text-blue-400 border-blue-400/50';
       case 'common': return 'text-green-400 border-green-400/50';
       default: return 'text-gray-400 border-gray-400/50';
@@ -184,7 +184,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       <div className="game-panel p-6">
         <div className="flex flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-3">
-            <div className="w-3 h-3 bg-red-400 rounded-full animate-pulse"></div>
+            <div className="w-3 h-3 bg-[#14F195] rounded-full animate-pulse"></div>
             <h2 className="text-2xl font-bold text-white tracking-wider">Hero Collection</h2>
           </div>
 
@@ -193,7 +193,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={saveProgress}
               disabled={isSaving}
-              className="modern-button success disabled:opacity-50"
+              className="solana-button success disabled:opacity-50"
             >
               {isSaving ? (
                 <>
@@ -208,7 +208,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={exportData}
               disabled={isExporting}
-              className="modern-button secondary disabled:opacity-50"
+              className="solana-button secondary disabled:opacity-50"
             >
               {isExporting ? (
                 <>
@@ -223,7 +223,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <button
               onClick={importData}
               disabled={isImporting}
-              className="modern-button warning disabled:opacity-50"
+              className="solana-button warning disabled:opacity-50"
             >
               {isImporting ? (
                 <>
@@ -247,8 +247,8 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
         {heroes.length === 0 ? (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">⚔️</div>
-            <p className="text-red-200 text-lg mb-4">No heroes deployed yet, Commander!</p>
-            <p className="text-red-300 text-sm">Summon your first tactical unit to begin your mission.</p>
+            <p className="text-slate-200 text-lg mb-4">No heroes deployed yet, Commander!</p>
+            <p className="text-slate-300 text-sm">Summon your first tactical unit to begin your mission.</p>
           </div>
         ) : (
           <div className="responsive-grid">
@@ -269,20 +269,20 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
                 <h3 className="text-xl font-bold text-white mb-3">{hero.name}</h3>
                 <div className="space-y-2 mb-4">
                   <div className="flex justify-between text-sm">
-                    <span className="text-red-300">Level:</span>
+                    <span className="text-slate-300">Level:</span>
                     <span className="text-white">{hero.level}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-red-300">Power:</span>
-                    <span className="text-red-400">{hero.power}</span>
+                    <span className="text-slate-300">Power:</span>
+                    <span className="text-[#14F195]">{hero.power}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-red-300">Health:</span>
-                    <span className="text-red-400">{hero.health}</span>
+                    <span className="text-slate-300">Health:</span>
+                    <span className="text-[#14F195]">{hero.health}</span>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <span className="text-red-300">Mana:</span>
-                    <span className="text-red-400">{hero.mana}</span>
+                    <span className="text-slate-300">Mana:</span>
+                    <span className="text-[#14F195]">{hero.mana}</span>
                   </div>
                 </div>
 
@@ -293,7 +293,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
                       e.stopPropagation();
                       openHeroDetails(hero);
                     }}
-                    className="flex-1 modern-button secondary text-sm"
+                    className="flex-1 solana-button secondary text-sm"
                   >
                     View Details
                   </button>
@@ -302,7 +302,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
                       e.stopPropagation();
                       startCustomization(hero);
                     }}
-                    className="flex-1 modern-button warning text-sm"
+                    className="flex-1 solana-button warning text-sm"
                   >
                     Customize
                   </button>
@@ -317,13 +317,13 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       <div className="game-panel p-6">
         <div className="text-center">
           <h3 className="text-2xl font-bold text-white mb-4 tracking-wider">🔮 Summon New Hero</h3>
-          <p className="text-red-200 mb-6">
+          <p className="text-slate-200 mb-6">
             Deploy legendary crypto heroes to expand your tactical arsenal
           </p>
           <button
             onClick={summonNewHero}
             disabled={isSummoning}
-            className="modern-button danger disabled:opacity-50 px-8 py-4 text-lg"
+            className="solana-button disabled:opacity-50 px-8 py-4 text-lg"
           >
             {isSummoning ? (
               <>
@@ -340,7 +340,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       {/* Hero Details Modal */}
       {selectedHero && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-gradient-to-br from-red-900 to-red-800 border border-red-600/50 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-600/50 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-start mb-6">
               <div>
                 <h3 className="text-3xl font-bold text-white mb-2">{selectedHero.name}</h3>
@@ -350,7 +350,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
               </div>
               <button
                 onClick={() => setSelectedHero(null)}
-                className="text-red-300 hover:text-white text-2xl"
+                className="text-slate-300 hover:text-white text-2xl"
               >
                 ×
               </button>
@@ -359,16 +359,16 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             {/* Hero Stats */}
             <div className="grid grid-cols-3 gap-4 mb-6">
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">{selectedHero.power}</div>
-                <div className="text-red-300 text-sm">POWER</div>
+                <div className="text-2xl font-bold text-[#14F195]">{selectedHero.power}</div>
+                <div className="text-slate-300 text-sm">POWER</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">{selectedHero.health}</div>
-                <div className="text-red-300 text-sm">HEALTH</div>
+                <div className="text-2xl font-bold text-[#14F195]">{selectedHero.health}</div>
+                <div className="text-slate-300 text-sm">HEALTH</div>
               </div>
               <div className="text-center">
-                <div className="text-2xl font-bold text-red-400">{selectedHero.mana}</div>
-                <div className="text-red-300 text-sm">MANA</div>
+                <div className="text-2xl font-bold text-[#14F195]">{selectedHero.mana}</div>
+                <div className="text-slate-300 text-sm">MANA</div>
               </div>
             </div>
 
@@ -377,18 +377,18 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
               <h4 className="text-xl font-bold text-white mb-3">Traits</h4>
               <div className="space-y-3">
                 {selectedHero.traits.map((trait, index) => (
-                  <div key={index} className="bg-red-800/50 rounded-lg p-3">
+                  <div key={index} className="bg-slate-800/50 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-white font-semibold">{trait.name}</span>
-                      <span className="text-red-400">{trait.value}/{trait.maxValue}</span>
+                      <span className="text-[#14F195]">{trait.value}/{trait.maxValue}</span>
                     </div>
-                    <div className="bg-red-700 rounded-full h-2">
+                    <div className="bg-slate-700 rounded-full h-2">
                       <div
-                        className="bg-gradient-to-r from-red-400 to-red-500 h-2 rounded-full transition-all duration-300"
+                        className="bg-gradient-to-r from-[#14F195] to-[#10b981] h-2 rounded-full transition-all duration-300"
                         style={{ width: `${(trait.value / trait.maxValue) * 100}%` }}
                       ></div>
                     </div>
-                    <p className="text-red-200 text-sm mt-2">{trait.description}</p>
+                    <p className="text-slate-200 text-sm mt-2">{trait.description}</p>
                   </div>
                 ))}
               </div>
@@ -396,7 +396,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
 
             <button
               onClick={() => setSelectedHero(null)}
-              className="w-full modern-button secondary py-3"
+              className="w-full solana-button secondary py-3"
             >
               Close
             </button>
@@ -407,25 +407,25 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
       {/* Hero Customization Modal */}
       {customizingHero && (
         <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-          <div className="bg-gradient-to-br from-red-900 to-red-800 border border-red-600/50 rounded-2xl p-8 max-w-md w-full">
+          <div className="bg-gradient-to-br from-slate-900 to-slate-800 border border-slate-600/50 rounded-2xl p-8 max-w-md w-full">
             <div className="text-center mb-6">
               <h3 className="text-2xl font-bold text-white mb-2">Customize {customizingHero.name}</h3>
-              <p className="text-red-200">Modify your tactical unit's attributes</p>
+              <p className="text-slate-200">Modify your tactical unit's attributes</p>
             </div>
 
             <div className="space-y-4 mb-6">
               <div>
-                <label className="block text-red-200 text-sm mb-2">Name</label>
+                <label className="block text-slate-200 text-sm mb-2">Name</label>
                 <input
                   type="text"
                   value={customizationData.name}
                   onChange={(e) => setCustomizationData({ ...customizationData, name: e.target.value })}
-                  className="w-full bg-red-800/50 border border-red-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-red-500/70"
+                  className="w-full bg-slate-800/50 border border-slate-600/50 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-[#9945FF]/70"
                 />
               </div>
 
               <div>
-                <label className="block text-red-200 text-sm mb-2">Power: {customizationData.power}</label>
+                <label className="block text-slate-200 text-sm mb-2">Power: {customizationData.power}</label>
                 <input
                   type="range"
                   min="1"
@@ -437,7 +437,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
               </div>
 
               <div>
-                <label className="block text-red-200 text-sm mb-2">Health: {customizationData.health}</label>
+                <label className="block text-slate-200 text-sm mb-2">Health: {customizationData.health}</label>
                 <input
                   type="range"
                   min="1"
@@ -449,7 +449,7 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
               </div>
 
               <div>
-                <label className="block text-red-200 text-sm mb-2">Mana: {customizationData.mana}</label>
+                <label className="block text-slate-200 text-sm mb-2">Mana: {customizationData.mana}</label>
                 <input
                   type="range"
                   min="1"
@@ -464,13 +464,13 @@ export function HeroCollection({ heroes, onHeroUpdate, heroManager }: HeroCollec
             <div className="flex gap-3">
               <button
                 onClick={saveCustomization}
-                className="flex-1 modern-button success py-3"
+                className="flex-1 solana-button success py-3"
               >
                 Save Changes
               </button>
               <button
                 onClick={() => setCustomizingHero(null)}
-                className="flex-1 modern-button secondary py-3"
+                className="flex-1 solana-button secondary py-3"
               >
                 Cancel
               </button>

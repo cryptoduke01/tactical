@@ -119,25 +119,25 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen game-launcher-bg flex items-center justify-center">
+      <div className="min-h-screen solana-bg flex items-center justify-center">
         <div className="text-center">
           <div className="relative mb-6">
-            <div className="w-24 h-24 border-4 border-red-600 rounded-full animate-spin"></div>
-            <div className="absolute inset-0 w-24 h-24 border-4 border-red-400 rounded-full animate-spin border-t-transparent"></div>
+            <div className="w-24 h-24 border-4 border-[#9945FF] rounded-full animate-spin"></div>
+            <div className="absolute inset-0 w-24 h-24 border-4 border-[#14F195] rounded-full animate-spin border-t-transparent"></div>
           </div>
           <h2 className="text-2xl font-bold text-white mb-2">Loading Game...</h2>
-          <p className="text-red-300">Initializing your tactical units</p>
+          <p className="text-[#14F195]">Initializing your tactical units</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen game-launcher-bg flex">
+    <div className="min-h-screen solana-bg flex">
       {/* Desktop Sidebar */}
       <div className="desktop-sidebar sidebar-nav w-20 flex flex-col items-center py-6 space-y-6">
         {/* Logo */}
-        <div className="nav-icon active">
+        <div className="nav-icon active" data-tooltip="Tactical Arena">
           <span className="text-2xl font-bold">T</span>
         </div>
 
@@ -147,6 +147,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
             key={tab}
             className={`nav-icon ${activeTab === tab ? 'active' : ''}`}
             onClick={() => handleTabChange(tab)}
+            data-tooltip={getTabLabel(tab)}
             title={getTabLabel(tab)}
           >
             <span className="text-xl">{getTabIcon(tab)}</span>
@@ -154,22 +155,22 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
         ))}
 
         {/* Settings Icon */}
-        <div className="nav-icon mt-auto">
+        <div className="nav-icon mt-auto" data-tooltip="Settings">
           <span className="text-xl">⚙️</span>
         </div>
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex-1 flex flex-col main-content">
         {/* Top Bar */}
-        <div className="bg-gradient-to-r from-red-900/30 to-red-800/20 backdrop-blur-xl border-b border-red-700/30 p-4">
+        <div className="bg-gradient-to-r from-slate-900/30 to-slate-800/20 backdrop-blur-xl border-b border-slate-700/30 p-4">
           <div className="flex items-center justify-between">
             {/* Greeting */}
             <div className="text-white">
               <h1 className="text-xl font-semibold">
                 Good evening, {playerProfile?.name || 'Commander'}
               </h1>
-              <p className="text-red-300 text-sm">Ready for tactical deployment?</p>
+              <p className="text-[#14F195] text-sm">Ready for tactical deployment?</p>
             </div>
 
             {/* Search Bar */}
@@ -178,27 +179,27 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
                 <input
                   type="text"
                   placeholder="Search heroes, quests..."
-                  className="w-full bg-red-800/30 border border-red-600/40 rounded-xl px-4 py-2 text-white placeholder-red-300 focus:outline-none focus:border-red-500/60"
+                  className="w-full bg-slate-800/30 border border-slate-600/40 rounded-xl px-4 py-2 text-white placeholder-slate-300 focus:outline-none focus:border-[#9945FF]/60"
                 />
-                <span className="absolute right-3 top-2.5 text-red-300">🔍</span>
+                <span className="absolute right-3 top-2.5 text-slate-300">🔍</span>
               </div>
             </div>
 
             {/* User Actions */}
             <div className="flex items-center space-x-3">
-              <div className="nav-icon">
+              <div className="nav-icon" data-tooltip="Shop">
                 <span className="text-lg">🛒</span>
               </div>
-              <div className="nav-icon">
+              <div className="nav-icon" data-tooltip="Notifications">
                 <span className="text-lg">🔔</span>
               </div>
-              <WalletMultiButton className="!bg-gradient-to-r !from-red-600 !to-red-500 hover:!from-red-500 hover:!to-red-400 !text-white !font-semibold !px-4 !py-2 !rounded-xl !border !border-red-500/50" />
+              <WalletMultiButton className="!bg-gradient-to-r !from-[#9945FF] !to-[#7c3aed] hover:!from-[#8b3cf6] hover:!to-[#6d28d9] !text-white !font-semibold !px-4 !py-2 !rounded-xl !border !border-[#9945FF]/50" />
             </div>
           </div>
         </div>
 
         {/* Content Area */}
-        <div className="flex-1 p-6 overflow-auto custom-scrollbar">
+        <div className="flex-1 content-wrapper overflow-auto custom-scrollbar">
           {activeTab === 'heroes' && (
             <HeroCollection
               heroes={heroes}
@@ -237,7 +238,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
           {(['heroes', 'battle', 'quests', 'stats'] as const).map((tab) => (
             <div
               key={tab}
-              className={`flex flex-col items-center space-y-1 ${activeTab === tab ? 'text-red-400' : 'text-red-300'}`}
+              className={`flex flex-col items-center space-y-1 ${activeTab === tab ? 'text-[#14F195]' : 'text-slate-300'}`}
               onClick={() => handleTabChange(tab)}
             >
               <span className="text-xl">{getTabIcon(tab)}</span>
@@ -247,7 +248,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
         </div>
       </div>
 
-      {/* Sound Control */}
+      {/* Sound Control - Fixed positioning */}
       <div className="sound-control" onClick={toggleMute}>
         <span className="text-white text-lg">
           {isMuted ? '🔇' : '🔊'}
@@ -263,35 +264,37 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
           step="0.1"
           value={volume}
           onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-          className="w-24 h-2 bg-red-700 rounded-lg appearance-none cursor-pointer slider"
+          className="w-24 h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer slider"
           style={{
-            background: `linear-gradient(to right, #dc2626 0%, #dc2626 ${volume * 100}%, #4c1d1d ${volume * 100}%, #4c1d1d 100%)`
+            background: `linear-gradient(to right, #9945FF 0%, #9945FF ${volume * 100}%, #374151 ${volume * 100}%, #374151 100%)`
           }}
         />
       </div>
 
-      {/* Toast Container */}
+      {/* Toast Container - Only show important toasts during gameplay */}
       <div className="toast-container">
-        {toasts.map((toast) => (
-          <div
-            key={toast.id}
-            className={`toast ${toast.type} slide-up`}
-            onClick={() => toastManager.removeToast(toast.id)}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex-1">
-                <h4 className="font-semibold mb-1">{toast.title}</h4>
-                <p className="text-sm opacity-90">{toast.message}</p>
+        {toasts
+          .filter(toast => toast.type !== 'info' || !toast.message.includes('3D Battle scene ready'))
+          .map((toast) => (
+            <div
+              key={toast.id}
+              className={`toast ${toast.type} slide-up`}
+              onClick={() => toastManager.removeToast(toast.id)}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex-1">
+                  <h4 className="font-semibold mb-1">{toast.title}</h4>
+                  <p className="text-sm opacity-90">{toast.message}</p>
+                </div>
+                <button
+                  onClick={() => toastManager.removeToast(toast.id)}
+                  className="ml-4 text-white/70 hover:text-white text-lg"
+                >
+                  ×
+                </button>
               </div>
-              <button
-                onClick={() => toastManager.removeToast(toast.id)}
-                className="ml-4 text-white/70 hover:text-white text-lg"
-              >
-                ×
-              </button>
             </div>
-          </div>
-        ))}
+          ))}
       </div>
 
       {/* Custom Slider Styles */}
@@ -301,7 +304,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
           height: 16px;
           width: 16px;
           border-radius: 50%;
-          background: #dc2626;
+          background: #9945FF;
           cursor: pointer;
           border: 2px solid #ffffff;
         }
@@ -310,7 +313,7 @@ export function ModernGameLayout({ children }: ModernGameLayoutProps) {
           height: 16px;
           width: 16px;
           border-radius: 50%;
-          background: #dc2626;
+          background: #9945FF;
           cursor: pointer;
           border: 2px solid #ffffff;
         }
